@@ -1,6 +1,6 @@
 ---
 name: setup
-description: "Configure Telegram Bot Token, chat ID, timezone, and language for the export-chat-logs plugin."
+description: "Configure Telegram Bot Token, chat ID, timezone, language, and output format for the export-chat-logs plugin."
 allowed-tools:
   - Bash
   - Read
@@ -56,10 +56,18 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup.sh"
    >
    > (Type `skip` to keep current value)
 
-6. After receiving all four values, run — pass `"skip"` for any field the user skipped:
+6. After receiving the language, ask the fifth question and **wait for the user's response** before continuing:
+
+   > Select your **output format** / 選擇**輸出格式**:
+   > - `html` — HTML with syntax highlighting and interactive charts (default)
+   > - `md` — Markdown (plain text)
+   >
+   > (Type `skip` to keep current value)
+
+7. After receiving all five values, run — pass `"skip"` for any field the user skipped:
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/save-token.sh" "<token or empty>" "<chat_id or empty>" "<timezone or empty>" "<lang or empty>"
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/save-token.sh" "<token or skip>" "<chat_id or skip>" "<timezone or skip>" "<lang or skip>" "<format or skip>"
 ```
 
 Stop after configuration is complete — do not proceed with the export flow.

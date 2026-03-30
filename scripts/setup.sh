@@ -12,11 +12,13 @@ CURRENT_TOKEN=""
 CURRENT_CHAT_ID=""
 CURRENT_TZ=""
 CURRENT_LANG=""
+CURRENT_FORMAT=""
 if [ -f "$ENV_FILE" ]; then
   CURRENT_TOKEN=$(grep 'TELEGRAM_BOT_TOKEN' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
   CURRENT_CHAT_ID=$(grep 'TELEGRAM_CHAT_ID' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
   CURRENT_TZ=$(grep 'TIMEZONE_OFFSET' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
   CURRENT_LANG=$(grep 'PLUGIN_LANG' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+  CURRENT_FORMAT=$(grep 'OUTPUT_FORMAT' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
 fi
 
 if [ -n "$CURRENT_TOKEN" ]; then
@@ -43,4 +45,10 @@ if [ -n "$CURRENT_LANG" ]; then
   echo "${LABEL_LANG_SET//%VALUE%/$CURRENT_LANG}"
 else
   echo "$LABEL_LANG_UNSET"
+fi
+
+if [ -n "$CURRENT_FORMAT" ]; then
+  echo "${LABEL_FORMAT_SET//%VALUE%/$CURRENT_FORMAT}"
+else
+  echo "$LABEL_FORMAT_UNSET"
 fi

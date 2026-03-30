@@ -1,6 +1,6 @@
 # export-chat-logs
 
-Claude Code plugin — 收集 Claude Code 聊天記錄，轉換為 Markdown 格式，打包成 zip，並透過 Telegram 傳送。
+Claude Code plugin — 收集 Claude Code 聊天記錄，轉換為 HTML 或 Markdown 格式，打包成 zip，並透過 Telegram 傳送。
 
 [English](README.md)
 
@@ -50,6 +50,7 @@ claude --plugin-dir /path/to/devtools-plugins
 - **Chat ID**：在 Telegram 找到 `@userinfobot`，傳送任意訊息，它會回覆你的 chat_id
 - **時區偏移**：整數，例如 `8`（UTC+8，台灣）、`9`（UTC+9，日本）、`-5`（UTC-5，EST）；預設為 `8`
 - **語言**：`en`（英文）或 `zh-TW`（繁體中文）；預設為 `en`
+- **輸出格式**：`html`（語法高亮 + 互動式圖表）或 `md`（純 Markdown）；預設為 `html`
 
 設定儲存於 `~/.config/devtools-plugins/export-chat-logs/.env`（權限 600，不納入 repo）。
 
@@ -92,8 +93,9 @@ claude -p "upload chat logs 14" --allowedTools "Bash,Read"
 ## 匯出內容
 
 - Claude Code：來自 `~/.claude/projects/` 的 JSONL 對話記錄
-- 每個對話轉換為一個 Markdown 檔案
-- 包含統計報告（token 用量、模型資訊）
+- 每個對話轉換為一個 HTML 檔案（或 Markdown，依設定而定）
+- HTML 包含語法高亮（highlight.js）與互動式圖表（Mermaid.js）
+- 包含統計報告（對話數、模型用量、分類統計）
 - 打包成 zip 並傳送至 Telegram
 
 ---
@@ -124,17 +126,19 @@ rm -rf ~/.claude/plugins/cache/devtools-plugins
 
 ```
 .claude-plugin/
-└── plugin.json          # Plugin 元資料
+└── plugin.json             # Plugin 元資料
 skills/
-├── upload/SKILL.md      # /export-chat-logs:upload
-└── setup/SKILL.md       # /export-chat-logs:setup
+├── upload/SKILL.md         # /export-chat-logs:upload
+└── setup/SKILL.md          # /export-chat-logs:setup
 scripts/
-├── export.sh            # 主匯出流程
-├── setup.sh             # 顯示目前設定狀態
-├── save-token.sh        # 寫入 token + chat_id
+├── common.py               # 共用邏輯（JSONL 解析、i18n/tz 載入）
+├── export.sh               # 主匯出流程
+├── setup.sh                # 顯示目前設定狀態
+├── save-token.sh           # 寫入 token + chat_id + 時區 + 語言 + 格式
+├── convert_to_html.py      # JSONL → HTML（語法高亮 + 圖表）
 ├── convert_to_markdown.py  # JSONL → Markdown
-├── generate_stats.py    # 統計報告
-└── i18n/                # 多語言字串
-    ├── en.sh / en.py        # 英文
-    └── zh_TW.sh / zh_TW.py # 繁體中文
+├── generate_stats.py       # 統計報告（HTML 或 Markdown）
+└── i18n/                   # 多語言字串
+    ├── en.sh / en.py           # 英文
+    └── zh_TW.sh / zh_TW.py    # 繁體中文
 ```

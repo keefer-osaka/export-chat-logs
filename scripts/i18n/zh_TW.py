@@ -24,8 +24,10 @@ S = {
     "col_count": "數量",
     "row_input": "輸入 token",
     "row_output": "輸出 token",
-    "row_cache": "快取 token",
+    "row_cache_read": "快取命中",
+    "row_cache_creation": "快取建立",
     "row_total": "合計",
+    "row_cache_hit_rate": "快取命中率",
     "summary_ratio": "輸入 {in_pct:.1f}% / 輸出 {out_pct:.1f}%",
 
     # generate_stats.py - type distribution section
@@ -50,10 +52,24 @@ S = {
     "col_datetime": "日期／時間",
     "col_title": "標題",
     "col_model": "模型",
+    "col_duration": "時長",
     "untitled": "*(未命名)*",
     "no_sessions_found": "*(未找到任何對話)*",
+    "skipped_sessions": "（已略過 {n} 筆無實質內容的對話）",
     "msg_stats_done": "✅ Claude Code 統計報告：{sessions} 個對話，共 {tokens} tokens → {path}",
     "warn_no_files": "⚠️  未找到 JSONL 檔案，寫入空報告。",
+
+    # generate_stats.py - tool usage section
+    "section_tool_usage": "工具使用統計",
+    "col_tool_name": "工具",
+    "col_tool_calls": "呼叫次數",
+
+    # generate_stats.py - project breakdown section
+    "section_project_breakdown": "專案分組",
+    "col_project": "專案",
+
+    # generate_stats.py - model usage section
+    "section_model_usage": "模型使用分布",
 
     # Category display labels
     "cat_Coding": "程式開發",

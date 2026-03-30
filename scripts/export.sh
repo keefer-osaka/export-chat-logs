@@ -5,7 +5,6 @@
 set -e
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-CONVERTER="$PLUGIN_ROOT/scripts/convert_to_markdown.py"
 STATS_SCRIPT="$PLUGIN_ROOT/scripts/generate_stats.py"
 
 # Load locale strings
@@ -24,6 +23,15 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 TELEGRAM_BOT_TOKEN=$(grep 'TELEGRAM_BOT_TOKEN' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
 CHAT_ID=$(grep 'TELEGRAM_CHAT_ID' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+OUTPUT_FORMAT=$(grep 'OUTPUT_FORMAT' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+OUTPUT_FORMAT="${OUTPUT_FORMAT:-html}"
+
+# Select converter based on output format
+if [ "$OUTPUT_FORMAT" = "html" ]; then
+  CONVERTER="$PLUGIN_ROOT/scripts/convert_to_html.py"
+else
+  CONVERTER="$PLUGIN_ROOT/scripts/convert_to_markdown.py"
+fi
 if [ -z "$TELEGRAM_BOT_TOKEN" ]; then
   echo "$ERR_TOKEN_EMPTY"
   exit 1
@@ -50,6 +58,7 @@ while IFS= read -r jsonl_file; do
   PROJECT_DISPLAY=$(echo "$PROJECT" | sed "s/^${HOME_ENCODED}-//;s/^${HOME_ENCODED}$//")
   OUT_DIR="$TMPDIR_PATH/claude-code/$PROJECT_DISPLAY"
   mkdir -p "$OUT_DIR"
+  python3 -c "import sys; sys.path.insert(0,'$PLUGIN_ROOT/scripts'); from common import is_trivial_session; sys.exit(0 if is_trivial_session(sys.argv[1]) else 1)" "$jsonl_file" 2>/dev/null && continue
   python3 "$CONVERTER" "$jsonl_file" "$OUT_DIR" --days "$DAYS" >/dev/null 2>&1 && CC_COUNT=$((CC_COUNT + 1))
 done < <(find "$HOME/.claude/projects" -name "*.jsonl" \
   -not -path "*/subagents/*" \
@@ -65,11 +74,12 @@ fi
 
 # Generate stats report
 STATS_DATE=$(date +%Y-%m-%d_%H-%M)
+STATS_EXT=$( [ "$OUTPUT_FORMAT" = "html" ] && echo "html" || echo "md" )
+STATS_FILE="$TMPDIR_PATH/${STATS_DATE}_${STATS_REPORT_SLUG}.${STATS_EXT}"
 python3 "$STATS_SCRIPT" --projects "$HOME/.claude/projects" --days "$DAYS" \
-  --out "$TMPDIR_PATH/${STATS_DATE}_claude-code_stats-report.md" >/dev/null 2>&1
-
-# Get accurate session count from stats report (consistent with report)
-STATS_FILE="$TMPDIR_PATH/${STATS_DATE}_claude-code_stats-report.md"
+  --format "$OUTPUT_FORMAT" \
+  --out "$STATS_FILE" \
+  --conv-base "$TMPDIR_PATH/claude-code" >/dev/null 2>&1
 CC_SESSIONS=$(grep '^\*\*Sessions:\*\*' "$STATS_FILE" 2>/dev/null | grep -o '[0-9]*' | head -1)
 CC_SESSIONS="${CC_SESSIONS:-$CC_COUNT}"
 
@@ -96,12 +106,17 @@ _s1="${SUMMARY_USER//%GIT_USER%/$GIT_USER}"
 _s2="${SUMMARY_PERIOD//%START_DATE%/$START_DATE}"; _s2="${_s2//%TODAY%/$TODAY}"; _s2="${_s2//%DAYS%/$DAYS}"
 _s3="${SUMMARY_STATS//%CC_SESSIONS%/$CC_SESSIONS}"
 _s4="${SUMMARY_SIZE//%ZIP_SIZE%/$ZIP_SIZE}"
+if [ "$OUTPUT_FORMAT" = "html" ]; then
+  _s5="$SUMMARY_FORMAT_HTML"
+else
+  _s5="$SUMMARY_FORMAT_MD"
+fi
 SUMMARY_TEXT="$SUMMARY_HEADER
 $_s1
 $_s2
 $_s3
 $_s4
-$SUMMARY_FORMAT"
+$_s5"
 
 # Send text summary first
 curl -s -o /dev/null -X POST \

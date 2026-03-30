@@ -24,8 +24,10 @@ S = {
     "col_count": "Count",
     "row_input": "Input token",
     "row_output": "Output token",
-    "row_cache": "Cache tokens",
+    "row_cache_read": "Cache read",
+    "row_cache_creation": "Cache creation",
     "row_total": "Total",
+    "row_cache_hit_rate": "Cache hit rate",
     "summary_ratio": "Input {in_pct:.1f}% / Output {out_pct:.1f}%",
 
     # generate_stats.py - type distribution section
@@ -50,10 +52,24 @@ S = {
     "col_datetime": "Date/Time",
     "col_title": "Title",
     "col_model": "Model",
+    "col_duration": "Duration",
     "untitled": "*(untitled)*",
     "no_sessions_found": "*(no sessions found)*",
+    "skipped_sessions": "({n} trivial sessions skipped)",
     "msg_stats_done": "\u2705 Claude Code stats report: {sessions} sessions, total {tokens} tokens \u2192 {path}",
     "warn_no_files": "\u26a0\ufe0f  No JSONL files found, writing empty report.",
+
+    # generate_stats.py - tool usage section
+    "section_tool_usage": "Tool Usage",
+    "col_tool_name": "Tool",
+    "col_tool_calls": "Calls",
+
+    # generate_stats.py - project breakdown section
+    "section_project_breakdown": "Project Breakdown",
+    "col_project": "Project",
+
+    # generate_stats.py - model usage section
+    "section_model_usage": "Model Usage",
 
     # Category display labels (internal keys stay in English for keyword matching)
     "cat_Coding": "Coding",

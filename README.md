@@ -1,6 +1,6 @@
 # export-chat-logs
 
-Claude Code plugin — collects Claude Code chat logs, converts them to Markdown, packages as a zip, and sends via Telegram.
+Claude Code plugin — collects Claude Code chat logs, converts them to HTML or Markdown, packages as a zip, and sends via Telegram.
 
 [繁體中文](README.zh-TW.md)
 
@@ -49,8 +49,12 @@ Follow the prompts to enter:
 - **Bot Token**: In Telegram, find `@BotFather` → `/mybots` → select your bot → API Token
 - **Chat ID**: In Telegram, find `@userinfobot`, send any message, and it will reply with your chat_id
 - **Timezone offset**: Integer, e.g. `8` (UTC+8, Taiwan), `-5` (UTC-5, EST); default is `8`
+- **Language**: `en` (English) or `zh-TW` (Traditional Chinese); default is `en`
+- **Output format**: `html` (syntax highlighting + interactive charts) or `md` (plain Markdown); default is `html`
 
 Settings are saved to `~/.config/devtools-plugins/export-chat-logs/.env` (permissions 600, not in repo).
+
+To change a single setting, run `/export-chat-logs:setup` again and type `skip` for fields you want to keep.
 
 ---
 
@@ -89,8 +93,9 @@ claude -p "upload chat logs 14" --allowedTools "Bash,Read"
 ## Exported Content
 
 - Claude Code: JSONL session logs from `~/.claude/projects/`
-- Each session is converted to a Markdown file
-- Includes a statistics report (token usage, model info)
+- Each session is converted to an HTML file (or Markdown if configured)
+- HTML includes syntax highlighting (highlight.js) and interactive charts (Mermaid.js)
+- Includes a statistics report (session count, model usage, category breakdown)
 - Packaged as a zip and sent to Telegram
 
 ---
@@ -121,14 +126,19 @@ Restart Claude Code after reinstalling.
 
 ```
 .claude-plugin/
-└── plugin.json          # Plugin metadata
+└── plugin.json             # Plugin metadata
 skills/
-├── upload/SKILL.md      # /export-chat-logs:upload
-└── setup/SKILL.md       # /export-chat-logs:setup
+├── upload/SKILL.md         # /export-chat-logs:upload
+└── setup/SKILL.md          # /export-chat-logs:setup
 scripts/
-├── export.sh            # Main export flow
-├── setup.sh             # Show current configuration status
-├── save-token.sh        # Write token + chat_id
+├── common.py               # Shared logic (JSONL parsing, i18n/tz loading)
+├── export.sh               # Main export flow
+├── setup.sh                # Show current configuration status
+├── save-token.sh           # Write token + chat_id + timezone + language + format
+├── convert_to_html.py      # JSONL → HTML (syntax highlighting + charts)
 ├── convert_to_markdown.py  # JSONL → Markdown
-└── generate_stats.py    # Statistics report
+├── generate_stats.py       # Statistics report (HTML or Markdown)
+└── i18n/                   # Locale strings
+    ├── en.sh / en.py           # English
+    └── zh_TW.sh / zh_TW.py    # Traditional Chinese
 ```
