@@ -1,6 +1,6 @@
 ---
 name: setup
-description: "Configure Telegram Bot Token, chat ID, and timezone for the export-chat-logs plugin."
+description: "Configure Telegram Bot Token, chat ID, timezone, and language for the export-chat-logs plugin."
 allowed-tools:
   - Bash
   - Read
@@ -17,7 +17,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup.sh"
 
 2. Ask the first question and **wait for the user's response** before continuing:
 
-   > Please enter your **Telegram Bot Token**
+   > Please enter your **Telegram Bot Token** (type `skip` to keep current value)
    >
    > **Create a new Bot:**
    > 1. Search for `@BotFather` in Telegram and open a chat
@@ -31,7 +31,7 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup.sh"
 
 3. After receiving the Token, ask the second question and **wait for the user's response** before continuing:
 
-   > Please enter your **Telegram Chat ID**
+   > Please enter your **Telegram Chat ID** (type `skip` to keep current value)
    >
    > **Get your personal chat_id:**
    > 1. Search for `@userinfobot` in Telegram and open a chat
@@ -46,12 +46,20 @@ bash "${CLAUDE_PLUGIN_ROOT}/scripts/setup.sh"
 
 4. After receiving the Chat ID, ask the third question and **wait for the user's response** before continuing:
 
-   > Please enter your **timezone offset** (integer, e.g. `8` for UTC+8 Taiwan, `9` for UTC+9 Japan, `-5` for UTC-5 EST; press Enter to skip and use the default `8`)
+   > Please enter your **timezone offset** (integer, e.g. `8` for UTC+8 Taiwan, `9` for UTC+9 Japan, `-5` for UTC-5 EST; type `skip` to keep current value)
 
-5. After receiving all three values, run:
+5. After receiving the timezone, ask the fourth question and **wait for the user's response** before continuing:
+
+   > Select your **language** / 選擇**語言**:
+   > - `en` — English (default)
+   > - `zh-TW` — 繁體中文
+   >
+   > (Type `skip` to keep current value)
+
+6. After receiving all four values, run — pass `"skip"` for any field the user skipped:
 
 ```bash
-bash "${CLAUDE_PLUGIN_ROOT}/scripts/save-token.sh" "<token provided by user>" "<chat_id provided by user>" "<timezone offset provided by user, default 8>"
+bash "${CLAUDE_PLUGIN_ROOT}/scripts/save-token.sh" "<token or empty>" "<chat_id or empty>" "<timezone or empty>" "<lang or empty>"
 ```
 
 Stop after configuration is complete — do not proceed with the export flow.

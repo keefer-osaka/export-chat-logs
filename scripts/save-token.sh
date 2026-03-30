@@ -1,20 +1,51 @@
 #!/usr/bin/env bash
-# save-token.sh - Save Telegram Bot Token, chat_id, and timezone offset
-# Usage: bash save-token.sh <token> <chat_id> [timezone_offset]
+# save-token.sh - Save Telegram Bot Token, chat_id, timezone offset, and language
+# Usage: bash save-token.sh [token] [chat_id] [timezone_offset] [lang]
+#   Pass empty string "" to keep the existing value for any argument.
 #   timezone_offset: integer, e.g. 8 for UTC+8 (Taiwan), -5 for UTC-5 (EST), default 8
-
-if [ -z "$1" ]; then
-  echo "❌ Token required: bash save-token.sh <token> <chat_id> [timezone_offset]"
-  exit 1
-fi
-if [ -z "$2" ]; then
-  echo "❌ Chat ID required: bash save-token.sh <token> <chat_id> [timezone_offset]"
-  exit 1
-fi
+#   lang: en or zh-TW, default en
 
 DATA_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/devtools-plugins/export-chat-logs"
-mkdir -p "$DATA_DIR"
 ENV_FILE="$DATA_DIR/.env"
+
+# Load locale strings (before validation so error messages are localized)
+source "$(dirname "$0")/i18n/load.sh"
+
+mkdir -p "$DATA_DIR"
+
+# Normalize "skip" / "-" to empty string for all arguments
+[ "$1" = "skip" ] || [ "$1" = "-" ] && set -- "" "${@:2}"
+[ "$2" = "skip" ] || [ "$2" = "-" ] && set -- "$1" "" "${@:3}"
+[ "$3" = "skip" ] || [ "$3" = "-" ] && set -- "$1" "$2" "" "${@:4}"
+[ "$4" = "skip" ] || [ "$4" = "-" ] && set -- "$1" "$2" "$3" ""
+
+# Token: use first argument if provided, otherwise keep existing, otherwise error
+if [ -n "$1" ]; then
+  TELEGRAM_BOT_TOKEN="$1"
+elif [ -f "$ENV_FILE" ]; then
+  TELEGRAM_BOT_TOKEN=$(grep 'TELEGRAM_BOT_TOKEN' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+  if [ -z "$TELEGRAM_BOT_TOKEN" ]; then
+    echo "$ERR_TOKEN_REQUIRED"
+    exit 1
+  fi
+else
+  echo "$ERR_TOKEN_REQUIRED"
+  exit 1
+fi
+
+# Chat ID: use second argument if provided, otherwise keep existing, otherwise error
+if [ -n "$2" ]; then
+  TELEGRAM_CHAT_ID="$2"
+elif [ -f "$ENV_FILE" ]; then
+  TELEGRAM_CHAT_ID=$(grep 'TELEGRAM_CHAT_ID' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+  if [ -z "$TELEGRAM_CHAT_ID" ]; then
+    echo "$ERR_CHATID_REQUIRED"
+    exit 1
+  fi
+else
+  echo "$ERR_CHATID_REQUIRED"
+  exit 1
+fi
 
 # Timezone: use third argument if provided, otherwise keep existing setting, otherwise default to 8 (UTC+8)
 if [ -n "$3" ]; then
@@ -26,7 +57,19 @@ else
   TZ_OFFSET="8"
 fi
 
-printf 'TELEGRAM_BOT_TOKEN=%s\nTELEGRAM_CHAT_ID=%s\nTIMEZONE_OFFSET=%s\n' "$1" "$2" "$TZ_OFFSET" > "$ENV_FILE"
+# Language: use fourth argument if provided, otherwise keep existing setting, otherwise default to en
+if [ -n "$4" ]; then
+  PLUGIN_LANG="$4"
+elif [ -f "$ENV_FILE" ]; then
+  PLUGIN_LANG=$(grep 'PLUGIN_LANG' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+  PLUGIN_LANG="${PLUGIN_LANG:-en}"
+else
+  PLUGIN_LANG="en"
+fi
+
+printf 'TELEGRAM_BOT_TOKEN=%s\nTELEGRAM_CHAT_ID=%s\nTIMEZONE_OFFSET=%s\nPLUGIN_LANG=%s\n' \
+  "$TELEGRAM_BOT_TOKEN" "$TELEGRAM_CHAT_ID" "$TZ_OFFSET" "$PLUGIN_LANG" > "$ENV_FILE"
 chmod 600 "$ENV_FILE"
 TZ_LABEL=$(printf "UTC%+d" "$TZ_OFFSET")
-echo "✅ Configuration saved (Token + Chat ID + Timezone ${TZ_LABEL})"
+_msg="${MSG_CONFIG_SAVED//%TZ_LABEL%/$TZ_LABEL}"; _msg="${_msg//%LANG%/$PLUGIN_LANG}"
+echo "$_msg"

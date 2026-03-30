@@ -1,6 +1,8 @@
 # export-chat-logs
 
-Claude Code plugin — collects Claude Code and Cursor chat logs, converts them to Markdown, packages as a zip, and sends via Telegram.
+Claude Code plugin — collects Claude Code chat logs, converts them to Markdown, packages as a zip, and sends via Telegram.
+
+[繁體中文](README.zh-TW.md)
 
 ## Installation
 
@@ -87,7 +89,6 @@ claude -p "upload chat logs 14" --allowedTools "Bash,Read"
 ## Exported Content
 
 - Claude Code: JSONL session logs from `~/.claude/projects/`
-- Cursor: agent transcript JSONL from `~/.cursor/projects/`
 - Each session is converted to a Markdown file
 - Includes a statistics report (token usage, model info)
 - Packaged as a zip and sent to Telegram

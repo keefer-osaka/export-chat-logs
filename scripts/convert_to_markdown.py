@@ -1,17 +1,41 @@
 #!/usr/bin/env python3
 """
-Convert Claude Code and Cursor JSONL chat logs to human-readable Markdown format.
-Usage: python3 convert_to_markdown.py <input.jsonl> <output_dir> [--source claude|cursor] [--cwd PATH]
+Convert Claude Code JSONL chat logs to human-readable Markdown format.
+Usage: python3 convert_to_markdown.py <input.jsonl> <output_dir> [--days N]
 """
 
 import json
 import re
 import sys
 import os
-import glob
-import sqlite3
+import importlib.util
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
+
+
+def _load_lang():
+    env_path = os.path.join(
+        os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")),
+        "devtools-plugins", "export-chat-logs", ".env"
+    )
+    lang = "en"
+    try:
+        with open(env_path) as f:
+            for line in f:
+                if line.startswith("PLUGIN_LANG="):
+                    lang = line.split("=", 1)[1].strip().strip("'\"")
+                    break
+    except Exception:
+        pass
+    lang_file = lang.replace("-", "_")
+    i18n_dir = os.path.join(os.path.dirname(__file__), "i18n")
+    locale_path = os.path.join(i18n_dir, f"{lang_file}.py")
+    if not os.path.exists(locale_path):
+        locale_path = os.path.join(i18n_dir, "en.py")
+    spec = importlib.util.spec_from_file_location("_locale", locale_path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.S
 
 
 def _load_tz():
@@ -33,6 +57,7 @@ def _load_tz():
 
 TZ_LOCAL, TZ_OFFSET = _load_tz()
 TZ_LABEL = f"UTC{TZ_OFFSET:+d}"
+S = _load_lang()
 
 MAX_MSG_LEN = 3000  # Max characters to display per message
 
@@ -40,11 +65,11 @@ MAX_MSG_LEN = 3000  # Max characters to display per message
 def truncate(text, max_len=MAX_MSG_LEN):
     if len(text) <= max_len:
         return text
-    return text[:max_len] + f"\n\n... *({len(text) - max_len} characters omitted)*"
+    return text[:max_len] + "\n\n" + S["truncated"].format(n=len(text) - max_len)
 
 
 def clean_string_content(text):
-    """Clean string message content: strip control characters, simplify slash command XML, clean Cursor XML tags."""
+    """Clean string message content: strip control characters, simplify slash command XML."""
     # Strip control characters
     text = re.sub(r'[\x00-\x08\x0b-\x1f\x7f]', '', text).strip()
 
@@ -63,17 +88,6 @@ def clean_string_content(text):
         if name_m:
             return name_m.group(1).strip()
         return ''
-
-    # Cursor: <user_query>...</user_query> → extract content only
-    uq_m = re.search(r'<user_query>(.*?)</user_query>', text, re.DOTALL)
-    if uq_m:
-        text = uq_m.group(1).strip()
-
-    # Cursor: remove <image_files>...</image_files> blocks
-    text = re.sub(r'<image_files>.*?</image_files>', '', text, flags=re.DOTALL).strip()
-
-    # Cursor: remove standalone [Image] markers
-    text = re.sub(r'\[Image\]\s*', '', text).strip()
 
     return text
 
@@ -155,134 +169,6 @@ def convert_claude_jsonl(filepath):
     return messages, first_ts, last_ts, title, cwd, models_seen
 
 
-def convert_cursor_jsonl(filepath):
-    """Parse a Cursor agent transcript JSONL file. Returns (messages, first_ts, last_ts, models).
-    Note: Cursor transcript format does not include model info; models always returns an empty list."""
-    messages = []
-    first_ts = None
-    last_ts = None
-    models_seen = []  # Cursor does not record model names
-
-    with open(filepath, encoding="utf-8", errors="ignore") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                obj = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-
-            role = obj.get("role", "")
-            if role not in ("user", "assistant"):
-                continue
-
-            content = obj.get("message", {}).get("content", [])
-            text = extract_text_blocks(content)
-
-            if text.strip():
-                ts = obj.get("timestamp", "")
-                if ts and first_ts is None:
-                    first_ts = ts
-                if ts:
-                    last_ts = ts
-                messages.append((role, text.strip(), ts))
-
-    return messages, first_ts, last_ts, models_seen
-
-
-def lookup_cursor_composer(composer_id):
-    """Look up the name, creation time, models, and cost for a composerId from the Cursor vscdb.
-    Returns (name, created_at_iso, models, total_cost_cents) or (None, None, [], 0)."""
-    name = None
-    created_iso = None
-
-    # Get title and creation time from workspaceStorage
-    vscdb_pattern = os.path.expanduser(
-        "~/Library/Application Support/Cursor/User/workspaceStorage/*/state.vscdb"
-    )
-    for db_path in glob.glob(vscdb_pattern):
-        try:
-            conn = sqlite3.connect(db_path)
-            cur = conn.cursor()
-            cur.execute("SELECT value FROM ItemTable WHERE key='composer.composerData'")
-            row = cur.fetchone()
-            conn.close()
-            if not row:
-                continue
-            data = json.loads(row[0])
-            for composer in data.get("allComposers", []):
-                if composer.get("composerId") == composer_id:
-                    name = composer.get("name", "").strip() or None
-                    created_ms = composer.get("createdAt")
-                    if created_ms:
-                        dt = datetime.fromtimestamp(created_ms / 1000, tz=timezone.utc)
-                        created_iso = dt.isoformat()
-                    break
-            if name is not None or created_iso is not None:
-                break
-        except Exception:
-            pass
-
-    # Get usageData (model names + cost) from globalStorage
-    models = []
-    total_cost_cents = 0
-    global_db = os.path.expanduser(
-        "~/Library/Application Support/Cursor/User/globalStorage/state.vscdb"
-    )
-    try:
-        conn = sqlite3.connect(global_db)
-        cur = conn.cursor()
-        cur.execute("SELECT value FROM cursorDiskKV WHERE key=?", (f"composerData:{composer_id}",))
-        row = cur.fetchone()
-        conn.close()
-        if row:
-            data = json.loads(row[0])
-            usage = data.get("usageData", {})
-            for model, stats in usage.items():
-                models.append(model)
-                total_cost_cents += stats.get("costInCents", 0)
-    except Exception:
-        pass
-
-    return name, created_iso, models, total_cost_cents
-
-
-def convert_cursor_txt(filepath):
-    """Parse legacy Cursor .txt format."""
-    messages = []
-    current_role = None
-    current_lines = []
-
-    with open(filepath, encoding="utf-8", errors="ignore") as f:
-        for line in f:
-            stripped = line.rstrip()
-            if stripped.startswith("user:"):
-                if current_role and current_lines:
-                    text = "\n".join(current_lines).strip()
-                    if text:
-                        messages.append((current_role, text, ""))
-                current_role = "user"
-                current_lines = [stripped[5:].strip()]
-            elif stripped.startswith("assistant:"):
-                if current_role and current_lines:
-                    text = "\n".join(current_lines).strip()
-                    if text:
-                        messages.append((current_role, text, ""))
-                current_role = "assistant"
-                current_lines = [stripped[10:].strip()]
-            else:
-                if current_role is not None:
-                    current_lines.append(stripped)
-
-    if current_role and current_lines:
-        text = "\n".join(current_lines).strip()
-        if text:
-            messages.append((current_role, text, ""))
-
-    return messages, None
-
-
 def generate_title_from_messages(messages):
     """Generate a title from conversation content (used for unnamed sessions)."""
     for role, text, ts in messages:
@@ -296,7 +182,7 @@ def generate_title_from_messages(messages):
     return None
 
 
-def format_markdown(messages, first_ts, source_name, cwd=None, title=None, models=None, cost_cents=0):
+def format_markdown(messages, first_ts, cwd=None, title=None, models=None):
     lines = []
 
     # Parse date
@@ -309,31 +195,28 @@ def format_markdown(messages, first_ts, source_name, cwd=None, title=None, model
             date_str = first_ts
 
     # Title
-    display_title = title or source_name
+    display_title = title or "Claude Code"
     lines.append(f"# {display_title}")
     lines.append("")
 
     if date_str:
-        lines.append(f"**Date:** {date_str}")
+        lines.append(f"**{S['label_date']}:** {date_str}")
 
     # Project path: show folder name (absolute path)
     if cwd:
         folder_name = Path(cwd).name or cwd
-        lines.append(f"**Project:** {folder_name} (`{cwd}`)")
+        lines.append(f"**{S['label_project']}:** {folder_name} (`{cwd}`)")
 
-    lines.append(f"**Source:** {source_name}")
+    lines.append(f"**{S['label_source']}:** {S['source_name']}")
     if models:
-        model_str = ', '.join(models)
-        if cost_cents:
-            model_str += f" (${cost_cents / 100:.2f})"
-        lines.append(f"**Model:** {model_str}")
-    lines.append(f"**Messages:** {len(messages)}")
+        lines.append(f"**{S['label_model']}:** {', '.join(models)}")
+    lines.append(f"**{S['label_messages']}:** {len(messages)}")
     lines.append("")
     lines.append("---")
     lines.append("")
 
     if not messages:
-        lines.append("*(no valid messages)*")
+        lines.append(S["no_messages"])
         return "\n".join(lines)
 
     for role, text, ts in messages:
@@ -345,9 +228,9 @@ def format_markdown(messages, first_ts, source_name, cwd=None, title=None, model
             except Exception:
                 pass
         if role == "user":
-            lines.append(f"### User{ts_str}")
+            lines.append(f"### {S['role_user']}{ts_str}")
         else:
-            lines.append(f"### Assistant{ts_str}")
+            lines.append(f"### {S['role_assistant']}{ts_str}")
         lines.append("")
         lines.append(truncate(text))
         lines.append("")
@@ -378,24 +261,12 @@ def make_output_path(out_dir, first_ts, title):
 
 def main():
     if len(sys.argv) < 3:
-        print("Usage: python3 convert_to_markdown.py <input> <output_dir> [--source claude|cursor] [--cwd PATH] [--days N]")
+        print("Usage: python3 convert_to_markdown.py <input.jsonl> <output_dir> [--days N]")
         sys.exit(1)
 
     input_path = sys.argv[1]
     out_dir = sys.argv[2]
-    source = "claude"
-    cwd_arg = None
     days_filter = None
-
-    if "--source" in sys.argv:
-        idx = sys.argv.index("--source")
-        if idx + 1 < len(sys.argv):
-            source = sys.argv[idx + 1]
-
-    if "--cwd" in sys.argv:
-        idx = sys.argv.index("--cwd")
-        if idx + 1 < len(sys.argv):
-            cwd_arg = sys.argv[idx + 1]
 
     if "--days" in sys.argv:
         idx = sys.argv.index("--days")
@@ -405,32 +276,7 @@ def main():
             except ValueError:
                 pass
 
-    ext = Path(input_path).suffix.lower()
-
-    last_ts = None
-
-    models = []
-    cost_cents = 0
-
-    if source == "cursor" and ext == ".txt":
-        messages, first_ts = convert_cursor_txt(input_path)
-        title = None
-        cwd = cwd_arg
-        source_name = "Cursor"
-    elif source == "cursor":
-        messages, first_ts, last_ts, models = convert_cursor_jsonl(input_path)
-        composer_id = Path(input_path).stem
-        db_name, db_ts, models, cost_cents = lookup_cursor_composer(composer_id)
-        title = db_name
-        if not first_ts and db_ts:
-            first_ts = db_ts
-        cwd = cwd_arg
-        source_name = "Cursor"
-    else:
-        messages, first_ts, last_ts, title, cwd, models = convert_claude_jsonl(input_path)
-        if cwd_arg:
-            cwd = cwd_arg
-        source_name = "Claude Code"
+    messages, first_ts, last_ts, title, cwd, models = convert_claude_jsonl(input_path)
 
     # If no timestamp, fall back to file modification time (local timezone)
     if not first_ts:
@@ -451,14 +297,14 @@ def main():
         except Exception:
             pass
 
-    md = format_markdown(messages, active_ts, source_name, cwd=cwd, title=title, models=models, cost_cents=cost_cents)
+    md = format_markdown(messages, active_ts, cwd=cwd, title=title, models=models)
 
     os.makedirs(out_dir, exist_ok=True)
     output_path = make_output_path(out_dir, active_ts, title)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(md)
 
-    print(f"✅ Done: {len(messages)} messages → {output_path}")
+    print(S["msg_done_convert"].format(n=len(messages), path=output_path))
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 ---
 name: upload
-description: "Package Claude Code and Cursor chat logs as Markdown zip and upload to Telegram. Use when user says 'export chat logs', 'upload logs', or provides a number of days."
+description: "Package Claude Code chat logs as Markdown zip and upload to Telegram. Use when user says 'export chat logs', 'upload logs', or provides a number of days."
 allowed-tools:
   - Bash
   - Read

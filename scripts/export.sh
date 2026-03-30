@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# export.sh - Export Claude Code and Cursor chat logs and send to Telegram
+# export.sh - Export Claude Code chat logs and send to Telegram
 # Usage: bash export.sh [days=7]
 
 set -e
@@ -7,6 +7,9 @@ set -e
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CONVERTER="$PLUGIN_ROOT/scripts/convert_to_markdown.py"
 STATS_SCRIPT="$PLUGIN_ROOT/scripts/generate_stats.py"
+
+# Load locale strings
+source "$PLUGIN_ROOT/scripts/i18n/load.sh"
 
 DAYS="${1:-7}"
 DAYS=$(echo "$DAYS" | grep -o '[0-9]*' | head -1)
@@ -16,17 +19,17 @@ DAYS="${DAYS:-7}"
 DATA_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/devtools-plugins/export-chat-logs"
 ENV_FILE="$DATA_DIR/.env"
 if [ ! -f "$ENV_FILE" ]; then
-  echo "❌ Not configured. Please run: /export-chat-logs:setup"
+  echo "$ERR_NOT_CONFIGURED"
   exit 1
 fi
 TELEGRAM_BOT_TOKEN=$(grep 'TELEGRAM_BOT_TOKEN' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
 CHAT_ID=$(grep 'TELEGRAM_CHAT_ID' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
 if [ -z "$TELEGRAM_BOT_TOKEN" ]; then
-  echo "❌ Telegram Bot Token is empty. Please run: /export-chat-logs:setup"
+  echo "$ERR_TOKEN_EMPTY"
   exit 1
 fi
 if [ -z "$CHAT_ID" ]; then
-  echo "❌ Telegram chat_id is empty. Please run: /export-chat-logs:setup"
+  echo "$ERR_CHATID_EMPTY"
   exit 1
 fi
 
@@ -34,51 +37,36 @@ fi
 EXPORT_DATE=$(date +%Y%m%d)
 TMPDIR_PATH="$TMPDIR/chat-export-${EXPORT_DATE}-$$"
 rm -rf "$TMPDIR_PATH"
-mkdir -p "$TMPDIR_PATH/claude-code" "$TMPDIR_PATH/cursor"
+mkdir -p "$TMPDIR_PATH/claude-code"
+
+# Strip home directory prefix from project folder name (e.g. -Users-user-foo-bar → foo-bar)
+HOME_ENCODED=$(echo "$HOME" | tr '/' '-')
 
 # Convert Claude Code sessions
 CC_COUNT=0
 while IFS= read -r jsonl_file; do
   [ -z "$jsonl_file" ] && continue
   PROJECT=$(echo "$jsonl_file" | sed 's|.*/projects/||' | cut -d'/' -f1)
-  OUT_DIR="$TMPDIR_PATH/claude-code/$PROJECT"
+  PROJECT_DISPLAY=$(echo "$PROJECT" | sed "s/^${HOME_ENCODED}-//;s/^${HOME_ENCODED}$//")
+  OUT_DIR="$TMPDIR_PATH/claude-code/$PROJECT_DISPLAY"
   mkdir -p "$OUT_DIR"
-  python3 "$CONVERTER" "$jsonl_file" "$OUT_DIR" --source claude --days "$DAYS" >/dev/null 2>&1 && CC_COUNT=$((CC_COUNT + 1))
+  python3 "$CONVERTER" "$jsonl_file" "$OUT_DIR" --days "$DAYS" >/dev/null 2>&1 && CC_COUNT=$((CC_COUNT + 1))
 done < <(find "$HOME/.claude/projects" -name "*.jsonl" \
   -not -path "*/subagents/*" \
   -not -path "*/memory/*" \
   -mtime -"$DAYS" 2>/dev/null)
 
-# Convert Cursor sessions
-CURSOR_COUNT=0
-CURSOR_BASE="$HOME/.cursor/projects"
-if [ -d "$CURSOR_BASE" ]; then
-  while IFS= read -r cursor_file; do
-    [ -z "$cursor_file" ] && continue
-    PROJECT=$(echo "$cursor_file" | sed "s|$CURSOR_BASE/||" | cut -d'/' -f1)
-    OUT_DIR="$TMPDIR_PATH/cursor/$PROJECT"
-    mkdir -p "$OUT_DIR"
-    python3 "$CONVERTER" "$cursor_file" "$OUT_DIR" --source cursor --cwd "$PROJECT" --days "$DAYS" >/dev/null 2>&1 && CURSOR_COUNT=$((CURSOR_COUNT + 1))
-  done < <(find "$CURSOR_BASE" -path "*/agent-transcripts/*" \
-    -not -path "*/subagents/*" \
-    \( -name "*.jsonl" -o -name "*.txt" \) \
-    -mtime -"$DAYS" 2>/dev/null)
-fi
-
 # Exit early if no sessions found
-if [ "$CC_COUNT" -eq 0 ] && [ "$CURSOR_COUNT" -eq 0 ]; then
-  echo "⚠️  No sessions found in the last ${DAYS} days, skipping."
+if [ "$CC_COUNT" -eq 0 ]; then
+  echo "${WARN_NO_SESSIONS//%DAYS%/$DAYS}"
   rm -rf "$TMPDIR_PATH"
   exit 0
 fi
 
-# Generate stats reports (run in parallel)
+# Generate stats report
 STATS_DATE=$(date +%Y-%m-%d_%H-%M)
 python3 "$STATS_SCRIPT" --projects "$HOME/.claude/projects" --days "$DAYS" \
-  --out "$TMPDIR_PATH/${STATS_DATE}_claude-code_stats-report.md" >/dev/null 2>&1 &
-python3 "$STATS_SCRIPT" --cursor-projects "$HOME/.cursor/projects" --days "$DAYS" \
-  --out "$TMPDIR_PATH/${STATS_DATE}_cursor_stats-report.md" >/dev/null 2>&1 &
-wait || true
+  --out "$TMPDIR_PATH/${STATS_DATE}_claude-code_stats-report.md" >/dev/null 2>&1
 
 # Get accurate session count from stats report (consistent with report)
 STATS_FILE="$TMPDIR_PATH/${STATS_DATE}_claude-code_stats-report.md"
@@ -104,14 +92,16 @@ if [ -n "$GIT_USER_EMAIL" ]; then
 else
   GIT_USER="$GIT_USER_DISPLAY"
 fi
-SUMMARY_TEXT="📦 Chat Log Export
-👤 User: ${GIT_USER}
-📅 Period: ${START_DATE} ~ ${TODAY} (last ${DAYS} days)
-📊 Stats:
-  • Claude Code: ${CC_SESSIONS} sessions
-  • Cursor: ${CURSOR_COUNT} conversations
-💾 File size: ${ZIP_SIZE}
-📝 Format: Markdown (tool calls and technical details omitted)"
+_s1="${SUMMARY_USER//%GIT_USER%/$GIT_USER}"
+_s2="${SUMMARY_PERIOD//%START_DATE%/$START_DATE}"; _s2="${_s2//%TODAY%/$TODAY}"; _s2="${_s2//%DAYS%/$DAYS}"
+_s3="${SUMMARY_STATS//%CC_SESSIONS%/$CC_SESSIONS}"
+_s4="${SUMMARY_SIZE//%ZIP_SIZE%/$ZIP_SIZE}"
+SUMMARY_TEXT="$SUMMARY_HEADER
+$_s1
+$_s2
+$_s3
+$_s4
+$SUMMARY_FORMAT"
 
 # Send text summary first
 curl -s -o /dev/null -X POST \
@@ -142,4 +132,5 @@ fi
 
 # Clean up temp directory
 rm -rf "$TMPDIR_PATH"
-echo "✅ Done! Claude Code: ${CC_SESSIONS} sessions, Cursor: ${CURSOR_COUNT} conversations, zip: ${ZIP_SIZE}, sent to Telegram"
+_done="${MSG_DONE//%CC_SESSIONS%/$CC_SESSIONS}"; _done="${_done//%ZIP_SIZE%/$ZIP_SIZE}"
+echo "$_done"
