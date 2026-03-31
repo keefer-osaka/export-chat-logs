@@ -21,11 +21,11 @@ if [ ! -f "$ENV_FILE" ]; then
   echo "$ERR_NOT_CONFIGURED"
   exit 1
 fi
-TELEGRAM_BOT_TOKEN=$(grep 'TELEGRAM_BOT_TOKEN' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
-CHAT_ID=$(grep 'TELEGRAM_CHAT_ID' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
-OUTPUT_FORMAT=$(grep 'OUTPUT_FORMAT' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+TELEGRAM_BOT_TOKEN=$(read_env_val TELEGRAM_BOT_TOKEN)
+CHAT_ID=$(read_env_val TELEGRAM_CHAT_ID)
+OUTPUT_FORMAT=$(read_env_val OUTPUT_FORMAT)
 OUTPUT_FORMAT="${OUTPUT_FORMAT:-html}"
-INCLUDE_COWORK=$(grep 'INCLUDE_COWORK' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+INCLUDE_COWORK=$(read_env_val INCLUDE_COWORK)
 INCLUDE_COWORK="${INCLUDE_COWORK:-false}"
 
 # Select converter based on output format

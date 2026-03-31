@@ -9,18 +9,23 @@ import importlib.util
 from datetime import datetime, timezone, timedelta
 
 
-def _load_lang():
+def _load_env():
     env_path = os.path.join(
         os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")),
         "devtools-plugins", "export-chat-logs", ".env"
     )
     lang = "en"
+    offset = 8
     try:
         with open(env_path) as f:
             for line in f:
                 if line.startswith("PLUGIN_LANG="):
                     lang = line.split("=", 1)[1].strip().strip("'\"")
-                    break
+                elif line.startswith("TIMEZONE_OFFSET="):
+                    try:
+                        offset = int(line.split("=", 1)[1].strip())
+                    except Exception:
+                        pass
     except Exception:
         pass
     lang_file = lang.replace("-", "_")
@@ -31,30 +36,41 @@ def _load_lang():
     spec = importlib.util.spec_from_file_location("_locale", locale_path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    return mod.S, lang
+    tz = timezone(timedelta(hours=offset))
+    return mod.S, lang, tz, offset
 
 
-def _load_tz():
-    env_path = os.path.join(
-        os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")),
-        "devtools-plugins", "export-chat-logs", ".env"
-    )
-    offset = 8  # Default UTC+8
-    try:
-        with open(env_path) as f:
-            for line in f:
-                if line.startswith("TIMEZONE_OFFSET="):
-                    offset = int(line.split("=", 1)[1].strip())
-                    break
-    except Exception:
-        pass
-    return timezone(timedelta(hours=offset)), offset
-
-
-S, LANG_CODE = _load_lang()
-TZ_LOCAL, TZ_OFFSET = _load_tz()
+S, LANG_CODE, TZ_LOCAL, TZ_OFFSET = _load_env()
 TZ_LABEL = f"UTC{TZ_OFFSET:+d}"
 MAX_MSG_LEN = 3000
+
+
+def parse_ts(ts_str: str) -> datetime:
+    """Parse a Claude timestamp string to a timezone-aware datetime."""
+    return datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+
+
+def format_local_ts(ts_str: str) -> str:
+    """Format a Claude timestamp as local time with timezone label."""
+    return parse_ts(ts_str).astimezone(TZ_LOCAL).strftime("%Y-%m-%d %H:%M") + f" {TZ_LABEL}"
+
+
+def compute_active_duration(timestamps) -> float:
+    """Return active session time in seconds (sum of consecutive gaps <= 30 min)."""
+    dts = [parse_ts(t) for t in timestamps]
+    return sum(
+        (dts[i] - dts[i - 1]).total_seconds()
+        for i in range(1, len(dts))
+        if (dts[i] - dts[i - 1]).total_seconds() <= 1800
+    )
+
+
+def resolve_display_title(title, cwd, source_label):
+    """Return (display_title, source_display) based on session source."""
+    if source_label == "cowork":
+        fallback = cwd.rstrip("/").split("/")[-1] if cwd else "Claude Cowork"
+        return title or fallback, S["source_name_cowork"]
+    return title or "Claude Code", S["source_name"]
 
 
 def truncate(text, max_len=MAX_MSG_LEN):
@@ -99,7 +115,6 @@ def extract_text_blocks(content):
             text = clean_string_content(block.get("text", ""))
             if text:
                 parts.append(text)
-        # tool_result, tool_use, thinking, image are all skipped
     return "\n\n".join(parts)
 
 
@@ -202,26 +217,20 @@ def is_trivial_session(filepath):
     if output_tokens >= 100:
         return False
 
-    # Compute active duration (sum consecutive gaps <= 30 min)
     if len(timestamps) >= 2:
         try:
-            dts = [datetime.fromisoformat(t.replace("Z", "+00:00")) for t in timestamps]
-            active = sum(
-                (dts[i] - dts[i - 1]).total_seconds()
-                for i in range(1, len(dts))
-                if (dts[i] - dts[i - 1]).total_seconds() <= 1800
-            )
+            active = compute_active_duration(timestamps)
             return active < 60
         except Exception:
             pass
-    return True  # single message or unparseable → trivial
+    return True
 
 
 def make_output_path(out_dir, first_ts, title, ext=".md"):
     """Generate output filename based on date and title."""
     if first_ts:
         try:
-            dt = datetime.fromisoformat(first_ts.replace("Z", "+00:00")).astimezone(TZ_LOCAL)
+            dt = parse_ts(first_ts).astimezone(TZ_LOCAL)
             date_str = f"{dt.strftime('%Y-%m-%d_%H-%M-%S')}-{dt.microsecond // 1000:03d}"
         except Exception:
             date_str = "unknown"
@@ -234,6 +243,47 @@ def make_output_path(out_dir, first_ts, title, ext=".md"):
     else:
         filename = f"{date_str}{ext}"
     return os.path.join(out_dir, filename)
+
+
+def converter_main(format_fn, ext):
+    """Shared main() logic for JSONL → file converters."""
+    if len(sys.argv) < 3:
+        print("Usage: python3 <script> <input.jsonl> <output_dir> [--days N] [--source-label LABEL]")
+        sys.exit(1)
+    input_path = sys.argv[1]
+    out_dir = sys.argv[2]
+    days_filter = None
+    source_label = None
+    if "--days" in sys.argv:
+        idx = sys.argv.index("--days")
+        if idx + 1 < len(sys.argv):
+            try:
+                days_filter = int(sys.argv[idx + 1])
+            except ValueError:
+                pass
+    if "--source-label" in sys.argv:
+        idx = sys.argv.index("--source-label")
+        if idx + 1 < len(sys.argv):
+            source_label = sys.argv[idx + 1]
+    messages, first_ts, last_ts, title, cwd, models = convert_claude_jsonl(input_path)
+    if not first_ts:
+        mtime = os.path.getmtime(input_path)
+        first_ts = datetime.fromtimestamp(mtime, tz=TZ_LOCAL).isoformat()
+    active_ts = last_ts or first_ts
+    if days_filter is not None and active_ts:
+        try:
+            dt_check = parse_ts(active_ts).astimezone(timezone.utc)
+            cutoff = datetime.now(timezone.utc) - timedelta(days=days_filter)
+            if dt_check < cutoff:
+                sys.exit(0)
+        except Exception:
+            pass
+    content = format_fn(messages, active_ts, cwd=cwd, title=title, models=models, source_label=source_label)
+    os.makedirs(out_dir, exist_ok=True)
+    output_path = make_output_path(out_dir, active_ts, title, ext=ext)
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(content)
+    print(S["msg_done_convert"].format(n=len(messages), path=output_path))
 
 
 if __name__ == "__main__":

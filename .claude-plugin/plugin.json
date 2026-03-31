@@ -1,12 +1,12 @@
 {
   "name": "export-chat-logs",
-  "description": "Export Claude Code and Cursor chat logs as Markdown, zip them, and send via Telegram.",
+  "description": "Export Claude Code and Cowork chat logs as HTML or Markdown, zip them, and send via Telegram.",
   "version": "0.1.0",
   "author": {
     "name": "keefer-osaka",
     "url": "https://github.com/keefer-osaka"
   },
-  "repository": "https://github.com/keefer-osaka/claude-plugins",
+  "repository": "https://github.com/keefer-osaka/devtools-plugins",
   "license": "MIT",
-  "keywords": ["chat-logs", "export", "telegram", "cursor", "claude-code", "markdown"]
+  "keywords": ["chat-logs", "export", "telegram", "claude-code", "html", "markdown", "cowork"]
 }

@@ -52,9 +52,9 @@ A numbered menu is shown — select which settings to change (e.g. `3 6`), then 
 - **Bot Token**: In Telegram, find `@BotFather` → `/mybots` → select your bot → API Token
 - **Chat ID**: In Telegram, find `@userinfobot`, send any message, and it will reply with your chat_id
 - **Timezone offset**: Integer, e.g. `8` (UTC+8, Taiwan), `9` (UTC+9, Japan); default is `8`
-- **Language**: `1` English / `2` Traditional Chinese; default is `en`
-- **Output format**: `1` HTML (syntax highlighting + interactive charts) / `2` Markdown; default is `html`
-- **Include Cowork**: `1` Yes / `2` No; include Claude Cowork sessions (macOS only); default is No
+- **Language**: `1` English / `2` Traditional Chinese; default is `1`
+- **Output format**: `1` HTML (syntax highlighting + interactive charts) / `2` Markdown; default is `1`
+- **Include Cowork**: `1` Yes / `2` No; include Claude Cowork sessions (macOS only); default is `2`
 
 Settings are saved to `~/.config/devtools-plugins/export-chat-logs/.env` (permissions 600, not in repo).
 
@@ -77,9 +77,27 @@ Settings are saved to `~/.config/devtools-plugins/export-chat-logs/.env` (permis
 ### Non-interactive mode (`claude -p`)
 
 ```bash
-claude -p "upload chat logs" --allowedTools "Bash,Read"
-claude -p "upload chat logs 14" --allowedTools "Bash,Read"
+claude -p "/export-chat-logs:upload" --allowedTools "Bash,Read"
+claude -p "/export-chat-logs:upload 14" --allowedTools "Bash,Read"
 ```
+
+---
+
+## Related: Built-in `/insights` Command
+
+Claude Code has a built-in `/insights` command (no plugin required) that generates an AI-powered qualitative analysis report of your usage patterns over the past 30 days.
+
+```
+/insights
+```
+
+It analyzes data from `~/.claude/usage-data/` and produces an HTML report covering:
+
+- Interaction style and habits
+- Types of tasks you commonly work on
+- Suggestions for improving your Claude Code workflow
+
+> **Note:** `/insights` is complementary to this plugin — it provides qualitative AI analysis, while `export-chat-logs` provides quantitative statistics (token usage, tool usage, session duration, etc.) with exportable chat history.
 
 ---
 

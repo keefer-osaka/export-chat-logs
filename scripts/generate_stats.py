@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
-from common import S, LANG_CODE, TZ_LOCAL, TZ_LABEL, make_output_path
+from common import S, LANG_CODE, TZ_LOCAL, TZ_LABEL, make_output_path, parse_ts, compute_active_duration
 
 # Category keywords (matched against title + first few user messages)
 CATEGORIES = {
@@ -489,8 +489,7 @@ def generate_report(sessions, days, out_path, skipped=0, source_label=None):
             ts_str = ""
             if s["first_ts"]:
                 try:
-                    dt = datetime.fromisoformat(s["first_ts"].replace("Z", "+00:00")).astimezone(TZ_LOCAL)
-                    ts_str = dt.strftime("%Y-%m-%d %H:%M")
+                    ts_str = parse_ts(s["first_ts"]).astimezone(TZ_LOCAL).strftime("%Y-%m-%d %H:%M")
                 except Exception:
                     ts_str = (s["first_ts"] or "")[:16]
             title_display = (s["title"] or S["untitled"])[:40]
@@ -561,7 +560,6 @@ tr:nth-child(even) td { background: var(--bg-alt); }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 .charts { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin: 16px 0; }
 .chart-box { flex: 1; min-width: 280px; max-width: 460px; }
-.mermaid { margin: 0 auto; }
 details { margin: 8px 0; }
 summary {
   cursor: pointer; padding: 6px 0;
@@ -614,16 +612,6 @@ def _html_table(headers, rows, col_classes=None):
     )
 
 
-def _mermaid_pie_html(title, data):
-    """Generate a <pre class="mermaid"> block for mermaid.js rendering."""
-    lines = [f"pie title {title}"]
-    for label, value in sorted(data.items(), key=lambda x: -x[1]):
-        if value > 0:
-            lines.append(f'    "{_mermaid_label(label)}" : {value}')
-    inner = "\n".join(lines)
-    return f'<pre class="mermaid">{inner}</pre>'
-
-
 def _bar_chart_html(data, total, show_count=True):
     """Generate a horizontal bar chart as HTML. Replaces Mermaid pie for HTML reports."""
     rows = sorted(data.items(), key=lambda x: -x[1])
@@ -648,7 +636,7 @@ def generate_html_report(sessions, days, out_path, conv_base=None, skipped=0, so
     now_str    = datetime.now(TZ_LOCAL).strftime("%Y-%m-%d %H:%M") + f" {TZ_LABEL}"
     start_date = (datetime.now(TZ_LOCAL) - timedelta(days=days)).strftime("%Y-%m-%d")
     end_date   = datetime.now(TZ_LOCAL).strftime("%Y-%m-%d")
-    lang_attr  = "zh-TW" if LANG_CODE == "zh-TW" else "en"
+    lang_attr  = LANG_CODE
 
     sessions.sort(key=lambda s: s["first_ts"] or "", reverse=True)
     d = _compute_stats(sessions)
@@ -777,8 +765,7 @@ def generate_html_report(sessions, days, out_path, conv_base=None, skipped=0, so
             ts_str = ""
             if s["first_ts"]:
                 try:
-                    dt = datetime.fromisoformat(s["first_ts"].replace("Z", "+00:00")).astimezone(TZ_LOCAL)
-                    ts_str = dt.strftime("%Y-%m-%d %H:%M")
+                    ts_str = parse_ts(s["first_ts"]).astimezone(TZ_LOCAL).strftime("%Y-%m-%d %H:%M")
                 except Exception:
                     ts_str = (s["first_ts"] or "")[:16]
             title_text = (s["title"] or S["untitled"])[:40]
@@ -832,17 +819,12 @@ def generate_html_report(sessions, days, out_path, conv_base=None, skipped=0, so
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title_esc}</title>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <style>{_STATS_CSS}</style>
 </head>
 <body>
   <div class="container">
     {body}
   </div>
-  <script>
-    const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    mermaid.initialize({{ startOnLoad: true, theme: isDark ? 'dark' : 'default' }});
-  </script>
 </body>
 </html>"""
 
@@ -880,7 +862,7 @@ def main():
         if not active_ts:
             continue
         try:
-            dt = datetime.fromisoformat(active_ts.replace("Z", "+00:00")).astimezone(timezone.utc)
+            dt = parse_ts(active_ts).astimezone(timezone.utc)
             if dt < cutoff_dt:
                 continue
         except Exception:
@@ -892,17 +874,9 @@ def main():
         try:
             tss = s.get("msg_timestamps") or []
             if len(tss) >= 2:
-                dts = [datetime.fromisoformat(t.replace("Z", "+00:00")) for t in tss]
-                active = sum(
-                    (dts[i] - dts[i - 1]).total_seconds()
-                    for i in range(1, len(dts))
-                    if (dts[i] - dts[i - 1]).total_seconds() <= 1800
-                )
-                s["duration"] = active
+                s["duration"] = compute_active_duration(tss)
             elif s["first_ts"] and s["last_ts"]:
-                dt_first = datetime.fromisoformat(s["first_ts"].replace("Z", "+00:00"))
-                dt_last  = datetime.fromisoformat(s["last_ts"].replace("Z", "+00:00"))
-                diff = (dt_last - dt_first).total_seconds()
+                diff = (parse_ts(s["last_ts"]) - parse_ts(s["first_ts"])).total_seconds()
                 s["duration"] = diff if diff <= 1800 else None
             else:
                 s["duration"] = None
@@ -925,9 +899,8 @@ def main():
     if not sessions:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
         if args.fmt == "html":
-            lang_attr = "zh-TW" if LANG_CODE == "zh-TW" else "en"
             empty_html = (
-                f'<!DOCTYPE html><html lang="{lang_attr}"><head><meta charset="UTF-8">'
+                f'<!DOCTYPE html><html lang="{LANG_CODE}"><head><meta charset="UTF-8">'
                 f'<title>{_html.escape(S["report_title"])}</title></head>'
                 f'<body><p>{_html.escape(S["no_sessions_found"])}</p></body></html>'
             )

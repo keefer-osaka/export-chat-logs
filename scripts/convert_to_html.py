@@ -11,8 +11,7 @@ import html as _html
 sys.path.insert(0, os.path.dirname(__file__))
 
 from pathlib import Path
-from datetime import datetime, timezone, timedelta
-from common import S, LANG_CODE, TZ_LOCAL, TZ_LABEL, truncate, convert_claude_jsonl, make_output_path
+from common import S, LANG_CODE, truncate, format_local_ts, resolve_display_title, converter_main
 
 # ── CSS ────────────────────────────────────────────────────────────────────────
 
@@ -256,20 +255,14 @@ def _md_to_html(text):
 # ── HTML formatter ─────────────────────────────────────────────────────────────
 
 def format_html(messages, first_ts, cwd=None, title=None, models=None, source_label=None):
-    if source_label == "cowork":
-        fallback_title = cwd.rstrip("/").split("/")[-1] if cwd else "Claude Cowork"
-        display_title = _html.escape(title or fallback_title)
-        source_display = S["source_name_cowork"]
-    else:
-        display_title = _html.escape(title or "Claude Code")
-        source_display = S["source_name"]
-    lang_attr = "zh-TW" if LANG_CODE == "zh-TW" else "en"
+    display_title_raw, source_display = resolve_display_title(title, cwd, source_label)
+    display_title = _html.escape(display_title_raw)
+    lang_attr = LANG_CODE
 
     date_str = ""
     if first_ts:
         try:
-            dt = datetime.fromisoformat(first_ts.replace("Z", "+00:00")).astimezone(TZ_LOCAL)
-            date_str = dt.strftime("%Y-%m-%d %H:%M") + f" {TZ_LABEL}"
+            date_str = format_local_ts(first_ts)
         except Exception:
             date_str = first_ts
 
@@ -294,8 +287,7 @@ def format_html(messages, first_ts, cwd=None, title=None, models=None, source_la
             ts_str = ""
             if ts:
                 try:
-                    dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-                    ts_str = dt.astimezone(TZ_LOCAL).strftime("%Y-%m-%d %H:%M") + f" {TZ_LABEL}"
+                    ts_str = format_local_ts(ts)
                 except Exception:
                     pass
             role_label = S["role_user"] if role == "user" else S["role_assistant"]
@@ -345,58 +337,5 @@ def format_html(messages, first_ts, cwd=None, title=None, models=None, source_la
 </html>"""
 
 
-# ── main ───────────────────────────────────────────────────────────────────────
-
-def main():
-    if len(sys.argv) < 3:
-        print("Usage: python3 convert_to_html.py <input.jsonl> <output_dir> [--days N]")
-        sys.exit(1)
-
-    input_path = sys.argv[1]
-    out_dir = sys.argv[2]
-    days_filter = None
-    source_label = None
-
-    if "--days" in sys.argv:
-        idx = sys.argv.index("--days")
-        if idx + 1 < len(sys.argv):
-            try:
-                days_filter = int(sys.argv[idx + 1])
-            except ValueError:
-                pass
-
-    if "--source-label" in sys.argv:
-        idx = sys.argv.index("--source-label")
-        if idx + 1 < len(sys.argv):
-            source_label = sys.argv[idx + 1]
-
-    messages, first_ts, last_ts, title, cwd, models = convert_claude_jsonl(input_path)
-
-    if not first_ts:
-        mtime = os.path.getmtime(input_path)
-        dt_mtime = datetime.fromtimestamp(mtime, tz=TZ_LOCAL)
-        first_ts = dt_mtime.isoformat()
-
-    active_ts = last_ts or first_ts
-
-    if days_filter is not None and active_ts:
-        try:
-            dt_check = datetime.fromisoformat(active_ts.replace("Z", "+00:00")).astimezone(timezone.utc)
-            cutoff = datetime.now(timezone.utc) - timedelta(days=days_filter)
-            if dt_check < cutoff:
-                sys.exit(0)
-        except Exception:
-            pass
-
-    html_content = format_html(messages, active_ts, cwd=cwd, title=title, models=models, source_label=source_label)
-
-    os.makedirs(out_dir, exist_ok=True)
-    output_path = make_output_path(out_dir, active_ts, title, ext=".html")
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(html_content)
-
-    print(S["msg_done_convert"].format(n=len(messages), path=output_path))
-
-
 if __name__ == "__main__":
-    main()
+    converter_main(format_html, ".html")

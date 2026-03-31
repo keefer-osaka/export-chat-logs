@@ -27,7 +27,7 @@ mkdir -p "$DATA_DIR"
 if [ -n "$1" ]; then
   TELEGRAM_BOT_TOKEN="$1"
 elif [ -f "$ENV_FILE" ]; then
-  TELEGRAM_BOT_TOKEN=$(grep 'TELEGRAM_BOT_TOKEN' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+  TELEGRAM_BOT_TOKEN=$(read_env_val TELEGRAM_BOT_TOKEN)
   if [ -z "$TELEGRAM_BOT_TOKEN" ]; then
     echo "$ERR_TOKEN_REQUIRED"
     exit 1
@@ -41,7 +41,7 @@ fi
 if [ -n "$2" ]; then
   TELEGRAM_CHAT_ID="$2"
 elif [ -f "$ENV_FILE" ]; then
-  TELEGRAM_CHAT_ID=$(grep 'TELEGRAM_CHAT_ID' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+  TELEGRAM_CHAT_ID=$(read_env_val TELEGRAM_CHAT_ID)
   if [ -z "$TELEGRAM_CHAT_ID" ]; then
     echo "$ERR_CHATID_REQUIRED"
     exit 1
@@ -55,7 +55,7 @@ fi
 if [ -n "$3" ]; then
   TZ_OFFSET="$3"
 elif [ -f "$ENV_FILE" ]; then
-  TZ_OFFSET=$(grep 'TIMEZONE_OFFSET' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+  TZ_OFFSET=$(read_env_val TIMEZONE_OFFSET)
   TZ_OFFSET="${TZ_OFFSET:-8}"
 else
   TZ_OFFSET="8"
@@ -65,7 +65,7 @@ fi
 if [ -n "$4" ]; then
   PLUGIN_LANG="$4"
 elif [ -f "$ENV_FILE" ]; then
-  PLUGIN_LANG=$(grep 'PLUGIN_LANG' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+  PLUGIN_LANG=$(read_env_val PLUGIN_LANG)
   PLUGIN_LANG="${PLUGIN_LANG:-en}"
 else
   PLUGIN_LANG="en"
@@ -75,7 +75,7 @@ fi
 if [ -n "$5" ]; then
   OUTPUT_FORMAT="$5"
 elif [ -f "$ENV_FILE" ]; then
-  OUTPUT_FORMAT=$(grep 'OUTPUT_FORMAT' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+  OUTPUT_FORMAT=$(read_env_val OUTPUT_FORMAT)
   OUTPUT_FORMAT="${OUTPUT_FORMAT:-html}"
 else
   OUTPUT_FORMAT="html"
@@ -85,7 +85,7 @@ fi
 if [ -n "$6" ]; then
   INCLUDE_COWORK="$6"
 elif [ -f "$ENV_FILE" ]; then
-  INCLUDE_COWORK=$(grep 'INCLUDE_COWORK' "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+  INCLUDE_COWORK=$(read_env_val INCLUDE_COWORK)
   INCLUDE_COWORK="${INCLUDE_COWORK:-false}"
 else
   INCLUDE_COWORK="false"

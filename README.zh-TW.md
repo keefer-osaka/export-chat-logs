@@ -52,9 +52,9 @@ claude --plugin-dir /path/to/devtools-plugins
 - **Bot Token**：在 Telegram 找到 `@BotFather` → `/mybots` → 選擇你的 bot → API Token
 - **Chat ID**：在 Telegram 找到 `@userinfobot`，傳送任意訊息，它會回覆你的 chat_id
 - **時區偏移**：整數，例如 `8`（UTC+8，台灣）、`9`（UTC+9，日本）；預設為 `8`
-- **語言**：`1` 英文 / `2` 繁體中文；預設為英文
-- **輸出格式**：`1` HTML（語法高亮 + 互動式圖表）/ `2` Markdown；預設為 HTML
-- **包含 Cowork**：`1` 包含 / `2` 不包含；是否包含 Claude Cowork 對話（僅限 macOS）；預設為不包含
+- **語言**：`1` 英文 / `2` 繁體中文；預設為 `1`
+- **輸出格式**：`1` HTML（語法高亮 + 互動式圖表）/ `2` Markdown；預設為 `1`
+- **包含 Cowork**：`1` 包含 / `2` 不包含；是否包含 Claude Cowork 對話（僅限 macOS）；預設為 `2`
 
 設定儲存於 `~/.config/devtools-plugins/export-chat-logs/.env`（權限 600，不納入 repo）。
 
@@ -77,9 +77,27 @@ claude --plugin-dir /path/to/devtools-plugins
 ### 非互動模式（`claude -p`）
 
 ```bash
-claude -p "upload chat logs" --allowedTools "Bash,Read"
-claude -p "upload chat logs 14" --allowedTools "Bash,Read"
+claude -p "/export-chat-logs:upload" --allowedTools "Bash,Read"
+claude -p "/export-chat-logs:upload 14" --allowedTools "Bash,Read"
 ```
+
+---
+
+## 相關：內建 `/insights` 指令
+
+Claude Code 內建 `/insights` 指令（不需安裝任何 plugin），可對過去 30 天的使用模式產生 AI 質性分析報告。
+
+```
+/insights
+```
+
+資料來源為 `~/.claude/usage-data/`，產出 HTML 報告，內容涵蓋：
+
+- 互動風格與使用習慣
+- 常見的工作類型
+- 改善 Claude Code 工作流程的建議
+
+> **備註：** `/insights` 與本 plugin 功能互補——它提供 AI 質性分析，而 `export-chat-logs` 提供量化統計（token 用量、工具用量、對話時長等）並可匯出完整對話記錄。
 
 ---
 

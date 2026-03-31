@@ -19,3 +19,7 @@ if [ -f "$_I18N_DIR/${_LANG_FILE}.sh" ]; then
 else
   source "$_I18N_DIR/en.sh"
 fi
+
+# Helper: read a single value from ENV_FILE (must be set by the calling script)
+# Usage: read_env_val KEY
+read_env_val() { grep "^$1=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' '; }
