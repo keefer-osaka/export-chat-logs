@@ -9,18 +9,13 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from pathlib import Path
-from common import S, truncate, format_local_ts, resolve_display_title, converter_main
+from common import S, truncate, safe_format_ts, resolve_display_title, converter_main
 
 
 def format_markdown(messages, first_ts, cwd=None, title=None, models=None, source_label=None):
     lines = []
 
-    date_str = ""
-    if first_ts:
-        try:
-            date_str = format_local_ts(first_ts)
-        except Exception:
-            date_str = first_ts
+    date_str = safe_format_ts(first_ts) if first_ts else ""
 
     display_title, source_display = resolve_display_title(title, cwd, source_label)
     lines.append(f"# {display_title}")
@@ -44,12 +39,8 @@ def format_markdown(messages, first_ts, cwd=None, title=None, models=None, sourc
         return "\n".join(lines)
 
     for role, text, ts in messages:
-        ts_str = ""
-        if ts:
-            try:
-                ts_str = f" · {format_local_ts(ts)}"
-            except Exception:
-                pass
+        _ts = safe_format_ts(ts, fallback="") if ts else ""
+        ts_str = f" · {_ts}" if _ts else ""
         if role == "user":
             lines.append(f"### {S['role_user']}{ts_str}")
         else:

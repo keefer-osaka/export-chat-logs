@@ -5,7 +5,7 @@ allowed-tools:
   - Bash
   - Read
 disable-model-invocation: true
-argument-hint: "[file.proto]"
+argument-hint: "[file or file.proto]"
 ---
 
 # Generate protoc-java-gen

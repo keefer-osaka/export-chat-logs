@@ -1,0 +1,106 @@
+{
+  "menu": {
+    "questions": [{
+      "question": "請選擇要修改的設定：",
+      "header": "設定",
+      "multiSelect": true,
+      "options": [
+        { "label": "語言", "description": "（目前：<CURRENT_LANG>）" },
+        { "label": "Bot Token", "description": "（目前：<MASKED_TOKEN>）" },
+        { "label": "Chat ID", "description": "（目前：<CURRENT_CHAT_ID>）" },
+        { "label": "偏好設定", "description": "（目前：<CURRENT_TZ>、<CURRENT_FORMAT>、Cowork: <CURRENT_COWORK>）" }
+      ]
+    }]
+  },
+  "language": {
+    "questions": [{
+      "question": "Select language / 選擇語言 / 言語を選択",
+      "header": "Language",
+      "multiSelect": false,
+      "options": [
+        { "label": "English", "description": "All output in English" },
+        { "label": "繁體中文", "description": "所有輸出使用繁體中文" },
+        { "label": "日本語", "description": "すべての出力を日本語で表示" }
+      ]
+    }]
+  },
+  "bot_token_exists": {
+    "questions": [{
+      "question": "在下方文字欄貼上你的 Telegram Bot Token，或保留現有值。",
+      "header": "Bot Token",
+      "multiSelect": false,
+      "options": [
+        { "label": "保留現值", "description": "<MASKED_TOKEN>" },
+        { "label": "如何取得 Token", "description": "Telegram → @BotFather → /newbot（新建）或 /mybots → API Token（現有）" }
+      ]
+    }]
+  },
+  "bot_token_first_time": {
+    "questions": [{
+      "question": "在下方文字欄貼上你的 Telegram Bot Token。",
+      "header": "Bot Token",
+      "multiSelect": false,
+      "options": [
+        { "label": "如何取得 Token", "description": "Telegram → @BotFather → /newbot（新建）或 /mybots → API Token（現有）" },
+        { "label": "稍後設定", "description": "匯出時必填，請在匯出前完成設定" }
+      ]
+    }]
+  },
+  "chat_id_exists": {
+    "questions": [{
+      "question": "在下方文字欄貼上你的 Telegram Chat ID，或保留現有值。",
+      "header": "Chat ID",
+      "multiSelect": false,
+      "options": [
+        { "label": "保留現值", "description": "<CURRENT_CHAT_ID>" },
+        { "label": "如何取得 Chat ID", "description": "個人：@userinfobot → 傳訊息 → 複製 id / 群組：將 bot 設為管理員，傳訊息，查看 getUpdates API" }
+      ]
+    }]
+  },
+  "chat_id_first_time": {
+    "questions": [{
+      "question": "在下方文字欄貼上你的 Telegram Chat ID。",
+      "header": "Chat ID",
+      "multiSelect": false,
+      "options": [
+        { "label": "如何取得 Chat ID", "description": "個人：@userinfobot → 傳訊息 → 複製 id / 群組：將 bot 設為管理員，傳訊息，查看 getUpdates API" },
+        { "label": "稍後設定", "description": "匯出時必填，請在匯出前完成設定" }
+      ]
+    }]
+  },
+  "bot_token_help": "**建立新 Bot：**\n1. 在 Telegram 搜尋 `@BotFather` 並開啟對話\n2. 傳送 `/newbot`\n3. 依提示輸入 bot 名稱與使用者名稱（必須以 `bot` 結尾，例如 `MyExportBot`）\n4. BotFather 回覆的 Token 格式為：`123456789:AAF...`\n\n**取得現有 Bot 的 Token：**\n1. 找到 `@BotFather`，傳送 `/mybots`\n2. 選擇你的 bot → **API Token**\n\n取得後，在下方文字欄貼上 Token。",
+  "chat_id_help": "**取得個人 chat_id：**\n1. 在 Telegram 搜尋 `@userinfobot` 並開啟對話\n2. 傳送任意訊息（例如 `/start`）\n3. Bot 回覆的 `id` 即為你的 chat_id（例如 `123456789`）\n\n**取得群組 chat_id：**\n1. 將 bot 加入群組並設為管理員\n2. 在群組中傳送任意訊息\n3. 開啟瀏覽器前往 `https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates`\n4. 找到 `\"chat\":{\"id\":...}` 欄位，群組 id 為負數（例如 `-100123456789`）\n\n取得後，在下方文字欄貼上 Chat ID。",
+  "preferences": {
+    "questions": [
+      {
+        "question": "選擇時區（在下方文字欄輸入自訂偏移量，例如 -5、8）",
+        "header": "時區",
+        "multiSelect": false,
+        "options": [
+          { "label": "UTC+8", "description": "台灣、新加坡、香港、中國" },
+          { "label": "UTC+9", "description": "日本、韓國" },
+          { "label": "UTC-5", "description": "美東（紐約）" },
+          { "label": "UTC-8", "description": "美西（洛杉磯）" }
+        ]
+      },
+      {
+        "question": "選擇輸出格式",
+        "header": "輸出格式",
+        "multiSelect": false,
+        "options": [
+          { "label": "HTML", "description": "語法高亮 + 互動式圖表" },
+          { "label": "Markdown", "description": "純文字，較簡潔" }
+        ]
+      },
+      {
+        "question": "是否包含 Claude Cowork 的對話？",
+        "header": "Cowork",
+        "multiSelect": false,
+        "options": [
+          { "label": "是", "description": "包含 Cowork 對話（僅 macOS）" },
+          { "label": "否", "description": "僅 Claude Code" }
+        ]
+      }
+    ]
+  }
+}

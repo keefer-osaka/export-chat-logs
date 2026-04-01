@@ -11,8 +11,6 @@ STATS_SCRIPT="$PLUGIN_ROOT/scripts/generate_stats.py"
 source "$PLUGIN_ROOT/scripts/i18n/load.sh"
 
 DAYS="${1:-7}"
-DAYS=$(echo "$DAYS" | grep -o '[0-9]*' | head -1)
-DAYS="${DAYS:-7}"
 
 # Load configuration (token + chat_id)
 DATA_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/devtools-plugins/export-chat-logs"
@@ -55,19 +53,35 @@ fi
 # Strip home directory prefix from project folder name (e.g. -Users-user-foo-bar → foo-bar)
 HOME_ENCODED=$(echo "$HOME" | tr '/' '-')
 
-# Convert Claude Code sessions
-CC_COUNT=0
-while IFS= read -r jsonl_file; do
-  [ -z "$jsonl_file" ] && continue
-  PROJECT=$(echo "$jsonl_file" | sed 's|.*/projects/||' | cut -d'/' -f1)
-  PROJECT_DISPLAY=$(echo "$PROJECT" | sed "s/^${HOME_ENCODED}-//;s/^${HOME_ENCODED}$//")
-  OUT_DIR="$TMPDIR_PATH/claude-code/$PROJECT_DISPLAY"
-  mkdir -p "$OUT_DIR"
-  python3 "$CONVERTER" "$jsonl_file" "$OUT_DIR" --days "$DAYS" >/dev/null 2>&1 && CC_COUNT=$((CC_COUNT + 1))
+# Convert Claude Code sessions (parallel)
+CC_MARK_DIR="$TMPDIR_PATH/.cc_done"
+mkdir -p "$CC_MARK_DIR"
+
+_convert_cc() {
+  local f="$1" proj disp out
+  proj=$(echo "$f" | sed 's|.*/projects/||' | cut -d'/' -f1)
+  disp=$(echo "$proj" | sed "s/^${HOME_ENCODED}-//;s/^${HOME_ENCODED}$//")
+  out="$TMPDIR_PATH/claude-code/$disp"
+  mkdir -p "$out"
+  python3 "$CONVERTER" "$f" "$out" --days "$DAYS" >/dev/null 2>&1 && \
+    mktemp "$CC_MARK_DIR/XXXXXXXXXX" >/dev/null || true
+}
+
+_cc_pids=()
+while IFS= read -r _f; do
+  _convert_cc "$_f" &
+  _cc_pids+=($!)
+  if [ "${#_cc_pids[@]}" -ge 8 ]; then
+    wait "${_cc_pids[0]}" 2>/dev/null || true
+    _cc_pids=("${_cc_pids[@]:1}")
+  fi
 done < <(find "$HOME/.claude/projects" -name "*.jsonl" \
   -not -path "*/subagents/*" \
   -not -path "*/memory/*" \
   -mtime -"$DAYS" 2>/dev/null)
+wait 2>/dev/null || true
+
+CC_COUNT=$(find "$CC_MARK_DIR" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
 
 # Convert Claude Cowork sessions (opt-in, macOS only)
 CW_COUNT=0
@@ -77,21 +91,41 @@ if [ "$INCLUDE_COWORK" = "true" ]; then
     "$HOME/Library/Application Support/Claude/local-agent-mode-sessions"
     "$HOME/Library/Application Support/Claude/claude-code-sessions"
   )
-  for COWORK_BASE in "${COWORK_PATHS[@]}"; do
-    [ -d "$COWORK_BASE" ] || continue
-    while IFS= read -r jsonl_file; do
-      [ -z "$jsonl_file" ] && continue
-      CW_PROJECT=$(python3 "$PLUGIN_ROOT/scripts/common.py" --extract-cwd "$jsonl_file" 2>/dev/null)
-      CW_PROJECT="${CW_PROJECT:-unknown}"
-      OUT_DIR="$TMPDIR_PATH/claude-cowork/$CW_PROJECT"
-      mkdir -p "$OUT_DIR"
-      python3 "$CONVERTER" "$jsonl_file" "$OUT_DIR" --days "$DAYS" --source-label cowork >/dev/null 2>&1 && CW_COUNT=$((CW_COUNT + 1))
-    done < <(find "$COWORK_BASE" -name "*.jsonl" \
-      -not -path "*/subagents/*" \
-      -not -path "*/memory/*" \
-      -not -name "audit.jsonl" \
-      -mtime -"$DAYS" 2>/dev/null)
-  done
+
+  CW_MARK_DIR="$TMPDIR_PATH/.cw_done"
+  mkdir -p "$CW_MARK_DIR"
+
+  _convert_cw() {
+    local f="$1" proj out
+    proj=$(python3 "$PLUGIN_ROOT/scripts/common.py" --extract-cwd "$f" 2>/dev/null)
+    proj="${proj:-unknown}"
+    out="$TMPDIR_PATH/claude-cowork/$proj"
+    mkdir -p "$out"
+    python3 "$CONVERTER" "$f" "$out" --days "$DAYS" --source-label cowork >/dev/null 2>&1 && \
+      mktemp "$CW_MARK_DIR/XXXXXXXXXX" >/dev/null || true
+  }
+
+  _cw_pids=()
+  while IFS= read -r _f; do
+    _convert_cw "$_f" &
+    _cw_pids+=($!)
+    if [ "${#_cw_pids[@]}" -ge 8 ]; then
+      wait "${_cw_pids[0]}" 2>/dev/null || true
+      _cw_pids=("${_cw_pids[@]:1}")
+    fi
+  done < <({
+    for COWORK_BASE in "${COWORK_PATHS[@]}"; do
+      [ -d "$COWORK_BASE" ] || continue
+      find "$COWORK_BASE" -name "*.jsonl" \
+        -not -path "*/subagents/*" \
+        -not -path "*/memory/*" \
+        -not -name "audit.jsonl" \
+        -mtime -"$DAYS" 2>/dev/null
+    done
+  })
+  wait 2>/dev/null || true
+
+  CW_COUNT=$(find "$CW_MARK_DIR" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
 fi
 
 # Exit early if no sessions found
@@ -138,7 +172,7 @@ GIT_USER_NAME=$(git config --global user.name 2>/dev/null | tr ' ' '_')
 GIT_USER_NAME="${GIT_USER_NAME:-$(whoami)}"
 ZIPNAME="$TMPDIR/chat-logs-${GIT_USER_NAME}-${EXPORT_DATE}.zip"
 rm -f "$ZIPNAME"
-cd "$TMPDIR_PATH" && zip -r "$ZIPNAME" . -x "*.DS_Store" > /dev/null
+cd "$TMPDIR_PATH" && zip -r "$ZIPNAME" . -x "*.DS_Store" -x ".cc_done/*" -x ".cw_done/*" > /dev/null
 ZIP_SIZE=$(du -sh "$ZIPNAME" | cut -f1)
 ZIP_BYTES=$(stat -f%z "$ZIPNAME" 2>/dev/null || stat -c%s "$ZIPNAME" 2>/dev/null)
 

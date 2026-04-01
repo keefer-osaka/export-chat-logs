@@ -1,0 +1,106 @@
+{
+  "menu": {
+    "questions": [{
+      "question": "Which settings would you like to change?",
+      "header": "Settings",
+      "multiSelect": true,
+      "options": [
+        { "label": "Language", "description": "(current: <CURRENT_LANG>)" },
+        { "label": "Bot Token", "description": "(current: <MASKED_TOKEN>)" },
+        { "label": "Chat ID", "description": "(current: <CURRENT_CHAT_ID>)" },
+        { "label": "Preferences", "description": "(current: <CURRENT_TZ>, <CURRENT_FORMAT>, Cowork: <CURRENT_COWORK>)" }
+      ]
+    }]
+  },
+  "language": {
+    "questions": [{
+      "question": "Select language / 選擇語言 / 言語を選択",
+      "header": "Language",
+      "multiSelect": false,
+      "options": [
+        { "label": "English", "description": "All output in English" },
+        { "label": "繁體中文", "description": "所有輸出使用繁體中文" },
+        { "label": "日本語", "description": "すべての出力を日本語で表示" }
+      ]
+    }]
+  },
+  "bot_token_exists": {
+    "questions": [{
+      "question": "Type or paste your Telegram Bot Token in the text field below, or keep the current value.",
+      "header": "Bot Token",
+      "multiSelect": false,
+      "options": [
+        { "label": "Keep current", "description": "<MASKED_TOKEN>" },
+        { "label": "How to get a token", "description": "Telegram → @BotFather → /newbot (new) or /mybots → API Token (existing)" }
+      ]
+    }]
+  },
+  "bot_token_first_time": {
+    "questions": [{
+      "question": "Type or paste your Telegram Bot Token in the text field below.",
+      "header": "Bot Token",
+      "multiSelect": false,
+      "options": [
+        { "label": "How to get a token", "description": "Telegram → @BotFather → /newbot (new) or /mybots → API Token (existing)" },
+        { "label": "Skip for now", "description": "Required for export — you must set this before exporting" }
+      ]
+    }]
+  },
+  "chat_id_exists": {
+    "questions": [{
+      "question": "Type or paste your Telegram Chat ID in the text field below, or keep the current value.",
+      "header": "Chat ID",
+      "multiSelect": false,
+      "options": [
+        { "label": "Keep current", "description": "<CURRENT_CHAT_ID>" },
+        { "label": "How to get Chat ID", "description": "Personal: @userinfobot → send any message → copy 'id' / Group: add bot as admin, send a message, check getUpdates API" }
+      ]
+    }]
+  },
+  "chat_id_first_time": {
+    "questions": [{
+      "question": "Type or paste your Telegram Chat ID in the text field below.",
+      "header": "Chat ID",
+      "multiSelect": false,
+      "options": [
+        { "label": "How to get Chat ID", "description": "Personal: @userinfobot → send any message → copy 'id' / Group: add bot as admin, send a message, check getUpdates API" },
+        { "label": "Skip for now", "description": "Required for export — you must set this before exporting" }
+      ]
+    }]
+  },
+  "bot_token_help": "**Create a new Bot:**\n1. Search for `@BotFather` in Telegram and open a chat\n2. Send `/newbot`\n3. Follow the prompts to name your bot (username must end with `bot`, e.g. `MyExportBot`)\n4. BotFather will reply with a Token in the format: `123456789:AAF...`\n\n**Get the Token for an existing Bot:**\n1. Find `@BotFather`, send `/mybots`\n2. Select your bot → **API Token**\n\nPaste the token in the text field below.",
+  "chat_id_help": "**Get your personal chat_id:**\n1. Search for `@userinfobot` in Telegram and open a chat\n2. Send any message (e.g. `/start`)\n3. The bot will reply with your `id` — that is your chat_id (e.g. `123456789`)\n\n**Get a group chat_id:**\n1. Add your bot to the group and grant it admin permissions\n2. Send any message in the group\n3. Open a browser and go to `https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates`\n4. Find the `\"chat\":{\"id\":...}` field; the group id is negative (e.g. `-100123456789`)\n\nPaste the Chat ID in the text field below.",
+  "preferences": {
+    "questions": [
+      {
+        "question": "Select your timezone (type a custom offset in the text field, e.g. -5, 8)",
+        "header": "Timezone",
+        "multiSelect": false,
+        "options": [
+          { "label": "UTC+8", "description": "Taiwan, Singapore, HK, China" },
+          { "label": "UTC+9", "description": "Japan, Korea" },
+          { "label": "UTC-5", "description": "US Eastern (New York)" },
+          { "label": "UTC-8", "description": "US Pacific (Los Angeles)" }
+        ]
+      },
+      {
+        "question": "Select output format",
+        "header": "Output Format",
+        "multiSelect": false,
+        "options": [
+          { "label": "HTML", "description": "Syntax highlighting + interactive charts" },
+          { "label": "Markdown", "description": "Plain text, simpler" }
+        ]
+      },
+      {
+        "question": "Include Claude Cowork sessions?",
+        "header": "Cowork",
+        "multiSelect": false,
+        "options": [
+          { "label": "Yes", "description": "Include Cowork sessions (macOS only)" },
+          { "label": "No", "description": "Claude Code only" }
+        ]
+      }
+    ]
+  }
+}

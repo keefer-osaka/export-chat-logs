@@ -14,274 +14,138 @@ disable-model-invocation: true
 
 Read `~/.config/devtools-plugins/export-chat-logs/.env` (use `$HOME` if `~` doesn't work) to extract the raw values. If the file does not exist, all values are unset and this is a first-time setup.
 
-Do NOT run `setup.sh` — current values will be shown directly in the AskUserQuestion options.
-
 Extract these values from the .env:
 - `CURRENT_TOKEN` (mask it: show first 6 and last 4 characters, e.g. `123456...F4x2`)
 - `CURRENT_CHAT_ID`
 - `CURRENT_TZ` (format as `UTC+N`)
-- `CURRENT_LANG`
+- `CURRENT_LANG` (default: `en` if not set)
 - `CURRENT_FORMAT`
 - `CURRENT_COWORK`
 
-## Step 2 — Branch: first-time vs. reconfigure
+## Step 2 — Determine language (`SETUP_LANG`)
 
-- **First-time** (`.env` does not exist): skip Step 3, go directly to Step 4 → 5 → 6 (all settings selected)
-- **Existing config**: proceed to Step 3 (menu)
+- **First-time** (`.env` does not exist): ask the user to pick a language (see below). Set `SETUP_LANG` to the result.
+- **Reconfigure** (`.env` exists): Set `SETUP_LANG = CURRENT_LANG`. Skip to Step 3.
+
+**Language selection (first-time only) — this is the only trilingual question:**
+```json
+{
+  "questions": [{
+    "question": "Select language / 選擇語言 / 言語を選択",
+    "header": "Language",
+    "multiSelect": false,
+    "options": [
+      {
+        "label": "English",
+        "description": "All output in English"
+      },
+      {
+        "label": "繁體中文",
+        "description": "所有輸出使用繁體中文"
+      },
+      {
+        "label": "日本語",
+        "description": "すべての出力を日本語で表示"
+      }
+    ]
+  }]
+}
+```
+
+Answer mapping: `"English"` → `en`, `"繁體中文"` → `zh-TW`, `"日本語"` → `ja`
+
+**After Step 2, read the questions file for the selected language:**
+
+```
+Read "${CLAUDE_PLUGIN_ROOT}/skills/setup/questions/<SETUP_LANG>.json"
+```
+
+(e.g. if `SETUP_LANG` is `zh-TW`, read `questions/zh-TW.json`)
+
+Store the parsed JSON as `Q`. All subsequent AskUserQuestion calls use keys from `Q`, substituting `<PLACEHOLDER>` values with the actual current values extracted in Step 1.
+
+**All subsequent AskUserQuestion calls use `SETUP_LANG`.**
+
+---
 
 ## Step 3 — Menu (existing config only)
 
-Use AskUserQuestion with `multiSelect: true`. In each option's description, show the current value; if unset, show `(not set / 未設定)`.
+Use `Q["menu"]` — substitute all `<CURRENT_*>` and `<MASKED_TOKEN>` placeholders with actual values. Use AskUserQuestion with `multiSelect: true`.
 
-```json
-{
-  "questions": [{
-    "question": "Which settings would you like to change? / 請選擇要修改的設定：",
-    "header": "Settings",
-    "multiSelect": true,
-    "options": [
-      {
-        "label": "Bot Token",
-        "description": "(current: <MASKED_TOKEN> / 目前：<MASKED_TOKEN>)"
-      },
-      {
-        "label": "Chat ID",
-        "description": "(current: <CURRENT_CHAT_ID> / 目前：<CURRENT_CHAT_ID>)"
-      },
-      {
-        "label": "Preferences / 偏好設定",
-        "description": "(current: <CURRENT_TZ>, <CURRENT_LANG>, <CURRENT_FORMAT>, Cowork: <CURRENT_COWORK> / 目前：<CURRENT_TZ>, <CURRENT_LANG>, <CURRENT_FORMAT>, Cowork: <CURRENT_COWORK>)"
-      }
-    ]
-  }]
-}
-```
+If a value is not set, use the phrase "not set" / "未設定" / "未設定" in the description.
 
 For unselected settings, use `skip` when calling `save-config.sh`.
 
-## Step 4 — Bot Token (if selected or first-time)
+---
 
-Use AskUserQuestion. Tell the user to paste their token in the **Other** field.
+## Step 4 — Language (if "Language" / "語言" / "言語" selected in reconfigure)
 
-**When current token exists:**
-```json
-{
-  "questions": [{
-    "question": "Enter your Telegram Bot Token in the 'Other' field, or keep the current value. / 在「Other」欄位貼上你的 Telegram Bot Token，或保留現有值。",
-    "header": "Bot Token",
-    "multiSelect": false,
-    "options": [
-      {
-        "label": "Keep current / 保留現值",
-        "description": "<MASKED_TOKEN>"
-      },
-      {
-        "label": "How to get a token / 如何取得 Token",
-        "description": "Telegram → @BotFather → /newbot (new) or /mybots → API Token (existing)"
-      }
-    ]
-  }]
-}
-```
+Language was already set in Step 2 for first-time. For reconfigure, show this step only if Language was selected in the menu.
 
-**When no current token (first-time):**
-```json
-{
-  "questions": [{
-    "question": "Enter your Telegram Bot Token in the 'Other' field. / 在「Other」欄位貼上你的 Telegram Bot Token。",
-    "header": "Bot Token",
-    "multiSelect": false,
-    "options": [
-      {
-        "label": "How to get a token / 如何取得 Token",
-        "description": "Telegram → @BotFather → /newbot (new) or /mybots → API Token (existing)"
-      },
-      {
-        "label": "Skip for now / 稍後設定",
-        "description": "Required for export — you must set this before exporting / 匯出時必填，請在匯出前完成設定"
-      }
-    ]
-  }]
-}
-```
+Use `Q["language"]`.
+
+Answer mapping: `"English"` → `en`, `"繁體中文"` → `zh-TW`, `"日本語"` → `ja`
+
+---
+
+## Step 5 — Bot Token (if selected or first-time)
+
+If `CURRENT_TOKEN` exists: use `Q["bot_token_exists"]` (substitute `<MASKED_TOKEN>`).
+Otherwise: use `Q["bot_token_first_time"]`.
 
 **Handling answers:**
-- User types via "Other" → use that text as the token
-- "Keep current / 保留現值" → use `skip`
-- "Skip for now / 稍後設定" → use `skip`
-- "How to get a token / 如何取得 Token" → print the following instructions, then ask Step 4 again:
+- User types via text field → use that text as the token
+- "Keep current" label from Q → use `skip`
+- "Skip for now" label from Q → use `skip`
+- "How to get a token" label from Q → print `Q["bot_token_help"]`, then ask Step 5 again
 
-  > **Create a new Bot:**
-  > 1. Search for `@BotFather` in Telegram and open a chat
-  > 2. Send `/newbot`
-  > 3. Follow the prompts to enter the bot name and username (must end with `bot`, e.g. `MyExportBot`)
-  > 4. Once created, BotFather will reply with a Token in the format: `123456789:AAF...`
-  >
-  > **Get the Token for an existing Bot:**
-  > 1. Find `@BotFather` in Telegram, send `/mybots`
-  > 2. Select your bot → **API Token**
-  >
-  > Then paste the token in the **Other** field. / 取得後，在「Other」欄位貼上 Token。
+---
 
-## Step 5 — Chat ID (if selected or first-time)
+## Step 6 — Chat ID (if selected or first-time)
 
-Use AskUserQuestion. Tell the user to paste their Chat ID in the **Other** field.
-
-**When current Chat ID exists:**
-```json
-{
-  "questions": [{
-    "question": "Enter your Telegram Chat ID in the 'Other' field, or keep the current value. / 在「Other」欄位貼上你的 Telegram Chat ID，或保留現有值。",
-    "header": "Chat ID",
-    "multiSelect": false,
-    "options": [
-      {
-        "label": "Keep current / 保留現值",
-        "description": "<CURRENT_CHAT_ID>"
-      },
-      {
-        "label": "How to get Chat ID / 如何取得 Chat ID",
-        "description": "Personal: @userinfobot → send any message → copy 'id' / Group: add bot as admin, send a message, check getUpdates API"
-      }
-    ]
-  }]
-}
-```
-
-**When no current Chat ID (first-time):**
-```json
-{
-  "questions": [{
-    "question": "Enter your Telegram Chat ID in the 'Other' field. / 在「Other」欄位貼上你的 Telegram Chat ID。",
-    "header": "Chat ID",
-    "multiSelect": false,
-    "options": [
-      {
-        "label": "How to get Chat ID / 如何取得 Chat ID",
-        "description": "Personal: @userinfobot → send any message → copy 'id' / Group: add bot as admin, send a message, check getUpdates API"
-      },
-      {
-        "label": "Skip for now / 稍後設定",
-        "description": "Required for export — you must set this before exporting / 匯出時必填，請在匯出前完成設定"
-      }
-    ]
-  }]
-}
-```
+If `CURRENT_CHAT_ID` exists: use `Q["chat_id_exists"]` (substitute `<CURRENT_CHAT_ID>`).
+Otherwise: use `Q["chat_id_first_time"]`.
 
 **Handling answers:**
-- User types via "Other" → use that text as the Chat ID
-- "Keep current / 保留現值" → use `skip`
-- "Skip for now / 稍後設定" → use `skip`
-- "How to get Chat ID / 如何取得 Chat ID" → print the following instructions, then ask Step 5 again:
+- User types via text field → use that text as the Chat ID
+- "Keep current" label from Q → use `skip`
+- "Skip for now" label from Q → use `skip`
+- "How to get Chat ID" label from Q → print `Q["chat_id_help"]`, then ask Step 6 again
 
-  > **Get your personal chat_id:**
-  > 1. Search for `@userinfobot` in Telegram and open a chat
-  > 2. Send any message (e.g. `/start`)
-  > 3. The bot will reply with your `id` — that is your chat_id (a number, e.g. `123456789`)
-  >
-  > **Get a group chat_id:**
-  > 1. Add your bot to the group and grant it admin permissions
-  > 2. Send any message in the group
-  > 3. Open a browser and go to `https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates`
-  > 4. Find the `"chat":{"id":...}` field; the group id is negative (e.g. `-100123456789`)
-  >
-  > Then paste the Chat ID in the **Other** field. / 取得後，在「Other」欄位貼上 Chat ID。
+---
 
-## Step 6 — Preferences (if "Preferences" selected or first-time)
+## Step 7 — Preferences (if "Preferences" / "偏好設定" / "環境設定" selected, or first-time)
 
-Use a single AskUserQuestion call with up to 4 questions (Timezone + Language + Format + Cowork). For each question, append `(current / 目前)` to the description of the option that matches the current value.
+Use `Q["preferences"]` — ask 3 questions (Timezone + Format + Cowork) in a single AskUserQuestion call.
 
-```json
-{
-  "questions": [
-    {
-      "question": "Select your timezone / 選擇時區 (type a custom offset in 'Other', e.g. -5, 5, 0 / 在「Other」輸入自訂偏移量)",
-      "header": "Timezone",
-      "multiSelect": false,
-      "options": [
-        {
-          "label": "UTC+8",
-          "description": "Taiwan, Singapore, HK, China / 台灣、新加坡、香港、中國"
-        },
-        {
-          "label": "UTC+9",
-          "description": "Japan, Korea / 日本、韓國"
-        },
-        {
-          "label": "UTC+0",
-          "description": "UK, UTC / 英國"
-        }
-      ]
-    },
-    {
-      "question": "Select language / 選擇語言",
-      "header": "Language",
-      "multiSelect": false,
-      "options": [
-        {
-          "label": "English",
-          "description": "All output in English"
-        },
-        {
-          "label": "繁體中文",
-          "description": "所有輸出使用繁體中文"
-        }
-      ]
-    },
-    {
-      "question": "Select output format / 選擇輸出格式",
-      "header": "Output Format",
-      "multiSelect": false,
-      "options": [
-        {
-          "label": "HTML",
-          "description": "Syntax highlighting + interactive charts / 語法高亮 + 互動式圖表"
-        },
-        {
-          "label": "Markdown",
-          "description": "Plain text, simpler / 純文字，較簡潔"
-        }
-      ]
-    },
-    {
-      "question": "Include Claude Cowork sessions? / 是否包含 Claude Cowork 的對話？",
-      "header": "Cowork",
-      "multiSelect": false,
-      "options": [
-        {
-          "label": "Yes / 是",
-          "description": "Include Cowork sessions (macOS only) / 包含 Cowork 對話（僅 macOS）"
-        },
-        {
-          "label": "No / 否",
-          "description": "Claude Code only / 僅 Claude Code"
-        }
-      ]
-    }
-  ]
-}
-```
+Append `(current)` / `（目前）` / `（現在）` to the option matching the current value.
 
-## Step 7 — Map answers and save
+---
+
+## Step 8 — Map answers and save
 
 Map the collected answers to config values:
 
 | Answer | Value |
 |--------|-------|
-| "Keep current / 保留現值" | `skip` |
-| "Skip for now / 稍後設定" | `skip` |
-| Token / Chat ID typed via Other | use as-is |
+| "Keep current" / "保留現值" / "現在の値を保持" | `skip` |
+| "Skip for now" / "稍後設定" / "後で設定する" | `skip` |
+| Token / Chat ID typed via text field | use as-is |
 | "UTC+8" | `8` |
 | "UTC+9" | `9` |
-| "UTC+0" | `0` |
-| Timezone typed via Other (e.g. `-5`, `5`) | use as-is |
+| "UTC-5" | `-5` |
+| "UTC-8" | `-8` |
+| Timezone typed via text field (e.g. `-5`, `5`) | use as-is |
 | "English" | `en` |
 | "繁體中文" | `zh-TW` |
+| "日本語" | `ja` |
 | "HTML" | `html` |
 | "Markdown" | `md` |
-| "Yes / 是" | `true` |
-| "No / 否" | `false` |
+| "Yes" / "是" / "はい" | `true` |
+| "No" / "否" / "いいえ" | `false` |
+| First-time language (from Step 2) | use for `lang` argument |
+| Language not selected in menu | `skip` for lang |
+| Preferences not selected in menu | `skip` for tz, format, cowork |
 | Setting not selected in menu | `skip` |
 
 Run:

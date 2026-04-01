@@ -1,0 +1,106 @@
+{
+  "menu": {
+    "questions": [{
+      "question": "変更する設定を選択してください：",
+      "header": "設定",
+      "multiSelect": true,
+      "options": [
+        { "label": "言語", "description": "（現在：<CURRENT_LANG>）" },
+        { "label": "Bot Token", "description": "（現在：<MASKED_TOKEN>）" },
+        { "label": "Chat ID", "description": "（現在：<CURRENT_CHAT_ID>）" },
+        { "label": "環境設定", "description": "（現在：<CURRENT_TZ>、<CURRENT_FORMAT>、Cowork: <CURRENT_COWORK>）" }
+      ]
+    }]
+  },
+  "language": {
+    "questions": [{
+      "question": "Select language / 選擇語言 / 言語を選択",
+      "header": "Language",
+      "multiSelect": false,
+      "options": [
+        { "label": "English", "description": "All output in English" },
+        { "label": "繁體中文", "description": "所有輸出使用繁體中文" },
+        { "label": "日本語", "description": "すべての出力を日本語で表示" }
+      ]
+    }]
+  },
+  "bot_token_exists": {
+    "questions": [{
+      "question": "下のテキスト欄に Telegram Bot Token を貼り付けるか、現在の値を保持してください。",
+      "header": "Bot Token",
+      "multiSelect": false,
+      "options": [
+        { "label": "現在の値を保持", "description": "<MASKED_TOKEN>" },
+        { "label": "Token の取得方法", "description": "Telegram → @BotFather → /newbot（新規）または /mybots → API Token（既存）" }
+      ]
+    }]
+  },
+  "bot_token_first_time": {
+    "questions": [{
+      "question": "下のテキスト欄に Telegram Bot Token を貼り付けてください。",
+      "header": "Bot Token",
+      "multiSelect": false,
+      "options": [
+        { "label": "Token の取得方法", "description": "Telegram → @BotFather → /newbot（新規）または /mybots → API Token（既存）" },
+        { "label": "後で設定する", "description": "エクスポートに必須です。エクスポート前に設定してください" }
+      ]
+    }]
+  },
+  "chat_id_exists": {
+    "questions": [{
+      "question": "下のテキスト欄に Telegram Chat ID を貼り付けるか、現在の値を保持してください。",
+      "header": "Chat ID",
+      "multiSelect": false,
+      "options": [
+        { "label": "現在の値を保持", "description": "<CURRENT_CHAT_ID>" },
+        { "label": "Chat ID の取得方法", "description": "個人：@userinfobot → メッセージを送信 → id をコピー / グループ：Bot を管理者追加、メッセージ送信、getUpdates API を確認" }
+      ]
+    }]
+  },
+  "chat_id_first_time": {
+    "questions": [{
+      "question": "下のテキスト欄に Telegram Chat ID を貼り付けてください。",
+      "header": "Chat ID",
+      "multiSelect": false,
+      "options": [
+        { "label": "Chat ID の取得方法", "description": "個人：@userinfobot → メッセージを送信 → id をコピー / グループ：Bot を管理者追加、メッセージ送信、getUpdates API を確認" },
+        { "label": "後で設定する", "description": "エクスポートに必須です。エクスポート前に設定してください" }
+      ]
+    }]
+  },
+  "bot_token_help": "**新しい Bot を作成する：**\n1. Telegram で `@BotFather` を検索してチャットを開く\n2. `/newbot` を送信する\n3. Bot の名前とユーザー名を入力する（ユーザー名は `bot` で終わる必要あり、例：`MyExportBot`）\n4. BotFather からトークンが届く（形式：`123456789:AAF...`）\n\n**既存 Bot のトークンを取得する：**\n1. `@BotFather` を開き、`/mybots` を送信\n2. Bot を選択 → **API Token**\n\nトークンを下のテキスト欄に貼り付けてください。",
+  "chat_id_help": "**個人の chat_id を取得する：**\n1. Telegram で `@userinfobot` を検索してチャットを開く\n2. 任意のメッセージ（例：`/start`）を送信\n3. Bot が返信する `id` があなたの chat_id（例：`123456789`）\n\n**グループの chat_id を取得する：**\n1. Bot をグループに追加して管理者権限を付与\n2. グループで任意のメッセージを送信\n3. ブラウザで `https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates` を開く\n4. `\"chat\":{\"id\":...}` フィールドを確認（グループ id は負の値、例：`-100123456789`）\n\nChat ID を下のテキスト欄に貼り付けてください。",
+  "preferences": {
+    "questions": [
+      {
+        "question": "タイムゾーンを選択してください（テキスト欄でカスタム入力可、例：-5、8）",
+        "header": "タイムゾーン",
+        "multiSelect": false,
+        "options": [
+          { "label": "UTC+8", "description": "台湾、シンガポール、香港、中国" },
+          { "label": "UTC+9", "description": "日本、韓国" },
+          { "label": "UTC-5", "description": "米国東部（ニューヨーク）" },
+          { "label": "UTC-8", "description": "米国西部（ロサンゼルス）" }
+        ]
+      },
+      {
+        "question": "出力形式を選択してください",
+        "header": "出力形式",
+        "multiSelect": false,
+        "options": [
+          { "label": "HTML", "description": "シンタックスハイライト + インタラクティブグラフ" },
+          { "label": "Markdown", "description": "プレーンテキスト、シンプル" }
+        ]
+      },
+      {
+        "question": "Claude Cowork のセッションを含めますか？",
+        "header": "Cowork",
+        "multiSelect": false,
+        "options": [
+          { "label": "はい", "description": "Cowork セッションを含める（macOS のみ）" },
+          { "label": "いいえ", "description": "Claude Code のみ" }
+        ]
+      }
+    ]
+  }
+}

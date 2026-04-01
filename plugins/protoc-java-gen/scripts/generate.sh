@@ -41,6 +41,8 @@ if [ -z "$1" ]; then
 fi
 
 PROTO_FILE="$1"
+# Auto-append .proto extension if missing
+[[ "$PROTO_FILE" != *.proto ]] && PROTO_FILE="${PROTO_FILE}.proto"
 PROTO_PATH="$PROTO_DIR/$PROTO_FILE"
 
 if [ ! -f "$PROTO_PATH" ]; then

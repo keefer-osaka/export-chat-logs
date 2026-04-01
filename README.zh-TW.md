@@ -1,6 +1,6 @@
 # devtools-plugins
 
-[English](README.md)
+[English](README.md) | [日本語](README.ja.md)
 
 一套為開發者工作流程設計的 [Claude Code](https://claude.ai/code) Plugin 集合。
 

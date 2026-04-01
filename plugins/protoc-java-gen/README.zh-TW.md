@@ -1,6 +1,6 @@
 # protoc-java-gen
 
-[English](README.md)
+[English](README.md) | [日本語](README.ja.md)
 
 一個 Claude Code Plugin，使用指定版本的 protoc 從 `.proto` 檔案產生 Java 程式碼，並自動複製到所有對應的子專案。
 
@@ -30,14 +30,17 @@
 | `PROTOC_PATH` | `protoc` 執行檔的完整路徑 |
 | `PROJECT_ROOT` | 專案根目錄的絕對路徑 |
 | `PROTO_DIR` | 相對於專案根目錄的 proto 子目錄（預設：`proto`）|
-| `PLUGIN_LANG` | 輸出語言：`en` 或 `zh-TW`（預設：`en`）|
+| `PLUGIN_LANG` | 輸出語言：`en`、`zh-TW` 或 `ja`（預設：`en`）|
 
 設定儲存於 `~/.config/devtools-plugins/protoc-java-gen/.env`。
 
 ## 使用方式
 
+`.proto` 副檔名可省略：
+
 ```
-/protoc-java-gen:generate pay.proto
+/protoc-java-gen:generate service
+/protoc-java-gen:generate service.proto
 ```
 
 列出可用的 proto 檔案：
@@ -60,3 +63,26 @@
 - macOS / Linux
 - `protoc` 執行檔（任意版本，路徑透過 setup 設定）
 - 專案結構：產生的 Java 檔案位於 `src/main/java/proto/`
+
+## 檔案結構
+
+```
+.claude-plugin/
+└── plugin.json             # Plugin 元資料
+skills/
+├── generate/SKILL.md       # /protoc-java-gen:generate
+└── setup/
+    ├── SKILL.md            # /protoc-java-gen:setup
+    └── questions/          # 設定精靈問題定義
+        ├── en.json
+        ├── zh-TW.json
+        └── ja.json
+scripts/
+├── generate.sh             # 主要 protoc 呼叫與複製邏輯
+├── save-config.sh          # 寫入 protoc 路徑 + 專案根目錄 + proto 目錄 + 語言
+└── i18n/                   # 多語言字串
+    ├── load.sh                 # i18n 載入器（載入對應語言檔）
+    ├── en.sh                   # 英文
+    ├── zh_TW.sh                # 繁體中文
+    └── ja.sh                   # 日文
+```

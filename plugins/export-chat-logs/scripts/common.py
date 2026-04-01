@@ -44,6 +44,19 @@ S, LANG_CODE, TZ_LOCAL, TZ_OFFSET = _load_env()
 TZ_LABEL = f"UTC{TZ_OFFSET:+d}"
 MAX_MSG_LEN = 3000
 
+# Shared CSS custom properties (base palette + dark mode) used by HTML output scripts
+CSS_BASE_VARS = """\
+:root {
+  --bg: #ffffff; --bg-alt: #f6f8fa; --border: #d0d7de;
+  --text: #1f2328; --text-muted: #656d76; --link: #0969da;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117; --bg-alt: #161b22; --border: #30363d;
+    --text: #e6edf3; --text-muted: #8b949e; --link: #388bfd;
+  }
+}"""
+
 
 def parse_ts(ts_str: str) -> datetime:
     """Parse a Claude timestamp string to a timezone-aware datetime."""
@@ -53,6 +66,14 @@ def parse_ts(ts_str: str) -> datetime:
 def format_local_ts(ts_str: str) -> str:
     """Format a Claude timestamp as local time with timezone label."""
     return parse_ts(ts_str).astimezone(TZ_LOCAL).strftime("%Y-%m-%d %H:%M") + f" {TZ_LABEL}"
+
+
+def safe_format_ts(ts_str: str, fallback=None) -> str:
+    """Format a Claude timestamp; on error returns ts_str itself (or fallback if given)."""
+    try:
+        return format_local_ts(ts_str)
+    except Exception:
+        return ts_str if fallback is None else fallback
 
 
 def compute_active_duration(timestamps) -> float:
@@ -219,6 +240,16 @@ def is_trivial_stats(output_tokens, total_tokens, duration):
     return duration is None or duration < 60
 
 
+def is_skill_only_session(messages, tool_counts=None):
+    """Check if session contains only slash-command invocations with no real discussion."""
+    if tool_counts and "AskUserQuestion" in tool_counts:
+        return False
+    user_msgs = [text for role, text, _ in messages if role == "user"]
+    if not user_msgs:
+        return True
+    return all(re.match(r"^/\S+\s*$", m) for m in user_msgs)
+
+
 def make_output_path(out_dir, first_ts, title, ext=".md"):
     """Generate output filename based on date and title."""
     if first_ts:
@@ -273,6 +304,8 @@ def converter_main(format_fn, ext):
     tss = session["msg_timestamps"]
     duration = compute_active_duration(tss) if len(tss) >= 2 else None
     if is_trivial_stats(session["output_tokens"], total_tokens, duration):
+        sys.exit(2)
+    if is_skill_only_session(messages, session["tool_counts"]):
         sys.exit(2)
     active_ts = last_ts or first_ts
     if days_filter is not None and active_ts:

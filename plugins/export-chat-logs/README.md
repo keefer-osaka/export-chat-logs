@@ -4,7 +4,7 @@ Claude Code plugin — collects Claude Code and Cowork chat logs, converts them 
 
 > **Note:** This plugin works with **Claude Code (CLI)** conversations. **Claude Cowork** sessions can also be included (opt-in, macOS only). Claude Desktop Chat and claude.ai web conversations are stored server-side and cannot be accessed locally.
 
-[繁體中文](README.zh-TW.md)
+[繁體中文](README.zh-TW.md) | [日本語](README.ja.md)
 
 ## Installation
 
@@ -55,8 +55,8 @@ The setup wizard uses a clickable UI. On first run, it walks through all setting
 
 | Setting | Options | Default |
 |---------|---------|---------|
-| Timezone | UTC+8, UTC+9, UTC+0, or custom via "Other" | UTC+8 |
-| Language | English / 繁體中文 | English |
+| Timezone | UTC+8, UTC+9, UTC-5, UTC-8, or custom via "Other" | UTC+8 |
+| Language | English / 繁體中文 / 日本語 | English |
 | Output format | HTML (syntax highlighting + charts) / Markdown | HTML |
 | Include Cowork | Yes / No (macOS only) | No |
 
@@ -123,6 +123,11 @@ It analyzes data from `~/.claude/usage-data/` and produces an HTML report coveri
 - Includes a statistics report (session count, model usage, tool usage, category breakdown)
 - Packaged as a zip and sent to Telegram
 
+The following sessions are automatically skipped:
+
+- **No meaningful content**: zero tokens, or AI output < 100 tokens and duration < 60 seconds
+- **Skill-only execution**: all user messages are slash commands (e.g. `/export-chat-logs:upload`, `/exit`) with no interactive prompts (`AskUserQuestion`)
+
 ---
 
 ## Troubleshooting
@@ -154,7 +159,12 @@ Restart Claude Code after reinstalling.
 └── plugin.json             # Plugin metadata
 skills/
 ├── upload/SKILL.md         # /export-chat-logs:upload
-└── setup/SKILL.md          # /export-chat-logs:setup
+└── setup/
+    ├── SKILL.md            # /export-chat-logs:setup
+    └── questions/          # Setup wizard question definitions
+        ├── en.json
+        ├── zh-TW.json
+        └── ja.json
 scripts/
 ├── common.py               # Shared logic (JSONL parsing, i18n/tz loading)
 ├── upload.sh               # Main export flow
@@ -163,6 +173,8 @@ scripts/
 ├── convert_to_markdown.py  # JSONL → Markdown
 ├── generate_stats.py       # Statistics report (HTML or Markdown)
 └── i18n/                   # Locale strings
+    ├── load.sh                 # i18n loader (sources correct locale file)
     ├── en.sh / en.py           # English
-    └── zh_TW.sh / zh_TW.py    # Traditional Chinese
+    ├── zh_TW.sh / zh_TW.py    # Traditional Chinese
+    └── ja.sh / ja.py           # Japanese
 ```

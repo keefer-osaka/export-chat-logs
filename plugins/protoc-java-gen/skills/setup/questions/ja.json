@@ -1,0 +1,95 @@
+{
+  "menu": {
+    "questions": [{
+      "question": "変更する設定を選択してください：",
+      "header": "設定",
+      "multiSelect": true,
+      "options": [
+        { "label": "言語", "description": "（現在：<CURRENT_LANG>）" },
+        { "label": "Protoc パス", "description": "（現在：<CURRENT_PROTOC_PATH>）" },
+        { "label": "プロジェクトルート", "description": "（現在：<CURRENT_PROJECT_ROOT>）" },
+        { "label": "Proto ディレクトリ", "description": "（現在：<CURRENT_PROTO_DIR>）" }
+      ]
+    }]
+  },
+  "protoc_path_exists": {
+    "questions": [{
+      "question": "protoc バイナリのパスを選択するか、下のテキスト欄でカスタムパスを入力してください。",
+      "header": "Protoc パス",
+      "multiSelect": false,
+      "options": [
+        { "label": "現在の値を保持", "description": "<CURRENT_PROTOC_PATH>" },
+        { "label": "/usr/local/bin/protoc", "description": "Homebrew またはシステムインストール" },
+        { "label": "/usr/bin/protoc", "description": "システムインストール" }
+      ]
+    }]
+  },
+  "protoc_path_first_time": {
+    "questions": [{
+      "question": "protoc バイナリのパスを選択するか、下のテキスト欄でカスタムパスを入力してください。",
+      "header": "Protoc パス",
+      "multiSelect": false,
+      "options": [
+        { "label": "/usr/local/bin/protoc", "description": "Homebrew またはシステムインストール" },
+        { "label": "/usr/bin/protoc", "description": "システムインストール" }
+      ]
+    }]
+  },
+  "project_root_exists": {
+    "questions": [{
+      "question": "下のテキスト欄にプロジェクトルートの絶対パスを入力するか、現在の値を保持してください。",
+      "header": "プロジェクトルート",
+      "multiSelect": false,
+      "options": [
+        { "label": "現在の値を保持", "description": "<CURRENT_PROJECT_ROOT>" },
+        { "label": "プロジェクトルートとは？", "description": "プロジェクトのトップレベルディレクトリ。通常 build.gradle・pom.xml・Makefile が置かれている場所" }
+      ]
+    }]
+  },
+  "project_root_first_time": {
+    "questions": [{
+      "question": "下のテキスト欄にプロジェクトルートの絶対パスを入力してください（例：/Users/you/Projects/myapp）。",
+      "header": "プロジェクトルート",
+      "multiSelect": false,
+      "options": [
+        { "label": "プロジェクトルートとは？", "description": "プロジェクトのトップレベルディレクトリ。通常 build.gradle・pom.xml・Makefile が置かれている場所" },
+        { "label": "後で設定する", "description": "コード生成に必須です。実行前に設定してください" }
+      ]
+    }]
+  },
+  "proto_dir_exists": {
+    "questions": [{
+      "question": "proto ディレクトリを選択するか（プロジェクトルートからの相対パス）、下のテキスト欄でカスタムパスを入力してください。",
+      "header": "Proto ディレクトリ",
+      "multiSelect": false,
+      "options": [
+        { "label": "現在の値を保持", "description": "<CURRENT_PROTO_DIR>" },
+        { "label": "proto", "description": "デフォルト：<project_root>/proto" },
+        { "label": "src/main/proto", "description": "Maven/Gradle 標準レイアウト" }
+      ]
+    }]
+  },
+  "proto_dir_first_time": {
+    "questions": [{
+      "question": "proto ディレクトリを選択するか（プロジェクトルートからの相対パス）、下のテキスト欄でカスタムパスを入力してください。",
+      "header": "Proto ディレクトリ",
+      "multiSelect": false,
+      "options": [
+        { "label": "proto", "description": "デフォルト：<project_root>/proto" },
+        { "label": "src/main/proto", "description": "Maven/Gradle 標準レイアウト" }
+      ]
+    }]
+  },
+  "language": {
+    "questions": [{
+      "question": "出力言語を選択してください。",
+      "header": "言語",
+      "multiSelect": false,
+      "options": [
+        { "label": "English", "description": "すべての出力を英語で表示" },
+        { "label": "繁體中文", "description": "すべての出力を繁体字中国語で表示" },
+        { "label": "日本語", "description": "すべての出力を日本語で表示" }
+      ]
+    }]
+  }
+}

@@ -1,6 +1,6 @@
 # devtools-plugins
 
-[繁體中文](README.zh-TW.md)
+[繁體中文](README.zh-TW.md) | [日本語](README.ja.md)
 
 A collection of [Claude Code](https://claude.ai/code) plugins for developer workflows.
 

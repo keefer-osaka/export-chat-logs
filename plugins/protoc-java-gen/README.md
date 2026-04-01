@@ -1,6 +1,6 @@
 # protoc-java-gen
 
-[繁體中文](README.zh-TW.md)
+[繁體中文](README.zh-TW.md) | [日本語](README.ja.md)
 
 A Claude Code plugin to generate Java from `.proto` files using a specific protoc version, and automatically copy the output to matching subprojects.
 
@@ -30,14 +30,17 @@ Configure:
 | `PROTOC_PATH` | Full path to the `protoc` binary |
 | `PROJECT_ROOT` | Absolute path to your project root |
 | `PROTO_DIR` | Proto subdirectory relative to project root (default: `proto`) |
-| `PLUGIN_LANG` | Output language: `en` or `zh-TW` (default: `en`) |
+| `PLUGIN_LANG` | Output language: `en`, `zh-TW`, or `ja` (default: `en`) |
 
 Config is saved to `~/.config/devtools-plugins/protoc-java-gen/.env`.
 
 ## Usage
 
+The `.proto` extension is optional:
+
 ```
-/protoc-java-gen:generate pay.proto
+/protoc-java-gen:generate service
+/protoc-java-gen:generate service.proto
 ```
 
 List available proto files:
@@ -60,3 +63,26 @@ List available proto files:
 - macOS / Linux
 - `protoc` binary (any version, path configured via setup)
 - Project layout: generated Java under `src/main/java/proto/`
+
+## File Structure
+
+```
+.claude-plugin/
+└── plugin.json             # Plugin metadata
+skills/
+├── generate/SKILL.md       # /protoc-java-gen:generate
+└── setup/
+    ├── SKILL.md            # /protoc-java-gen:setup
+    └── questions/          # Setup wizard question definitions
+        ├── en.json
+        ├── zh-TW.json
+        └── ja.json
+scripts/
+├── generate.sh             # Main protoc invocation and copy logic
+├── save-config.sh          # Write protoc path + project root + proto dir + language
+└── i18n/                   # Locale strings
+    ├── load.sh                 # i18n loader (sources correct locale file)
+    ├── en.sh                   # English
+    ├── zh_TW.sh                # Traditional Chinese
+    └── ja.sh                   # Japanese
+```

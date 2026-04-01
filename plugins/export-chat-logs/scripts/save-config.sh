@@ -51,45 +51,10 @@ else
   exit 1
 fi
 
-# Timezone: use third argument if provided, otherwise keep existing setting, otherwise default to 8 (UTC+8)
-if [ -n "$3" ]; then
-  TZ_OFFSET="$3"
-elif [ -f "$ENV_FILE" ]; then
-  TZ_OFFSET=$(read_env_val TIMEZONE_OFFSET)
-  TZ_OFFSET="${TZ_OFFSET:-8}"
-else
-  TZ_OFFSET="8"
-fi
-
-# Language: use fourth argument if provided, otherwise keep existing setting, otherwise default to en
-if [ -n "$4" ]; then
-  PLUGIN_LANG="$4"
-elif [ -f "$ENV_FILE" ]; then
-  PLUGIN_LANG=$(read_env_val PLUGIN_LANG)
-  PLUGIN_LANG="${PLUGIN_LANG:-en}"
-else
-  PLUGIN_LANG="en"
-fi
-
-# Output format: use fifth argument if provided, otherwise keep existing setting, otherwise default to html
-if [ -n "$5" ]; then
-  OUTPUT_FORMAT="$5"
-elif [ -f "$ENV_FILE" ]; then
-  OUTPUT_FORMAT=$(read_env_val OUTPUT_FORMAT)
-  OUTPUT_FORMAT="${OUTPUT_FORMAT:-html}"
-else
-  OUTPUT_FORMAT="html"
-fi
-
-# Include Cowork: use sixth argument if provided, otherwise keep existing setting, otherwise default to false
-if [ -n "$6" ]; then
-  INCLUDE_COWORK="$6"
-elif [ -f "$ENV_FILE" ]; then
-  INCLUDE_COWORK=$(read_env_val INCLUDE_COWORK)
-  INCLUDE_COWORK="${INCLUDE_COWORK:-false}"
-else
-  INCLUDE_COWORK="false"
-fi
+TZ_OFFSET=$(resolve_arg "$3" TIMEZONE_OFFSET "8")
+PLUGIN_LANG=$(resolve_arg "$4" PLUGIN_LANG "en")
+OUTPUT_FORMAT=$(resolve_arg "$5" OUTPUT_FORMAT "html")
+INCLUDE_COWORK=$(resolve_arg "$6" INCLUDE_COWORK "false")
 
 printf 'TELEGRAM_BOT_TOKEN=%s\nTELEGRAM_CHAT_ID=%s\nTIMEZONE_OFFSET=%s\nPLUGIN_LANG=%s\nOUTPUT_FORMAT=%s\nINCLUDE_COWORK=%s\n' \
   "$TELEGRAM_BOT_TOKEN" "$TELEGRAM_CHAT_ID" "$TZ_OFFSET" "$PLUGIN_LANG" "$OUTPUT_FORMAT" "$INCLUDE_COWORK" > "$ENV_FILE"

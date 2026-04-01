@@ -1,0 +1,95 @@
+{
+  "menu": {
+    "questions": [{
+      "question": "請選擇要修改的設定項目：",
+      "header": "設定",
+      "multiSelect": true,
+      "options": [
+        { "label": "語言", "description": "（目前：<CURRENT_LANG>）" },
+        { "label": "Protoc 路徑", "description": "（目前：<CURRENT_PROTOC_PATH>）" },
+        { "label": "專案根目錄", "description": "（目前：<CURRENT_PROJECT_ROOT>）" },
+        { "label": "Proto 目錄", "description": "（目前：<CURRENT_PROTO_DIR>）" }
+      ]
+    }]
+  },
+  "protoc_path_exists": {
+    "questions": [{
+      "question": "選擇 protoc 執行檔路徑，或在下方文字欄輸入自訂路徑。",
+      "header": "Protoc 路徑",
+      "multiSelect": false,
+      "options": [
+        { "label": "保留現值", "description": "<CURRENT_PROTOC_PATH>" },
+        { "label": "/usr/local/bin/protoc", "description": "Homebrew 或系統安裝" },
+        { "label": "/usr/bin/protoc", "description": "系統安裝" }
+      ]
+    }]
+  },
+  "protoc_path_first_time": {
+    "questions": [{
+      "question": "選擇 protoc 執行檔路徑，或在下方文字欄輸入自訂路徑。",
+      "header": "Protoc 路徑",
+      "multiSelect": false,
+      "options": [
+        { "label": "/usr/local/bin/protoc", "description": "Homebrew 或系統安裝" },
+        { "label": "/usr/bin/protoc", "description": "系統安裝" }
+      ]
+    }]
+  },
+  "project_root_exists": {
+    "questions": [{
+      "question": "在下方文字欄輸入專案根目錄的絕對路徑，或保留現值。",
+      "header": "專案根目錄",
+      "multiSelect": false,
+      "options": [
+        { "label": "保留現值", "description": "<CURRENT_PROJECT_ROOT>" },
+        { "label": "什麼是專案根目錄？", "description": "專案的頂層目錄，通常包含 build.gradle、pom.xml 或 Makefile" }
+      ]
+    }]
+  },
+  "project_root_first_time": {
+    "questions": [{
+      "question": "在下方文字欄輸入專案根目錄的絕對路徑（例如 /Users/you/Projects/myapp）。",
+      "header": "專案根目錄",
+      "multiSelect": false,
+      "options": [
+        { "label": "什麼是專案根目錄？", "description": "專案的頂層目錄，通常包含 build.gradle、pom.xml 或 Makefile" },
+        { "label": "稍後設定", "description": "執行前必填" }
+      ]
+    }]
+  },
+  "proto_dir_exists": {
+    "questions": [{
+      "question": "選擇 proto 目錄（相對於專案根目錄），或在下方文字欄輸入自訂路徑。",
+      "header": "Proto 目錄",
+      "multiSelect": false,
+      "options": [
+        { "label": "保留現值", "description": "<CURRENT_PROTO_DIR>" },
+        { "label": "proto", "description": "預設：<project_root>/proto" },
+        { "label": "src/main/proto", "description": "Maven/Gradle 標準目錄結構" }
+      ]
+    }]
+  },
+  "proto_dir_first_time": {
+    "questions": [{
+      "question": "選擇 proto 目錄（相對於專案根目錄），或在下方文字欄輸入自訂路徑。",
+      "header": "Proto 目錄",
+      "multiSelect": false,
+      "options": [
+        { "label": "proto", "description": "預設：<project_root>/proto" },
+        { "label": "src/main/proto", "description": "Maven/Gradle 標準目錄結構" }
+      ]
+    }]
+  },
+  "language": {
+    "questions": [{
+      "question": "選擇輸出語言。",
+      "header": "語言",
+      "multiSelect": false,
+      "options": [
+        { "label": "English", "description": "所有輸出使用英文" },
+        { "label": "繁體中文", "description": "所有輸出使用繁體中文" },
+        { "label": "日本語", "description": "所有輸出使用日文" }
+      ]
+    }]
+  }
+}

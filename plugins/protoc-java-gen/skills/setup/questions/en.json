@@ -1,0 +1,95 @@
+{
+  "menu": {
+    "questions": [{
+      "question": "Which settings would you like to change?",
+      "header": "Settings",
+      "multiSelect": true,
+      "options": [
+        { "label": "Language", "description": "(current: <CURRENT_LANG>)" },
+        { "label": "Protoc Path", "description": "(current: <CURRENT_PROTOC_PATH>)" },
+        { "label": "Project Root", "description": "(current: <CURRENT_PROJECT_ROOT>)" },
+        { "label": "Proto Directory", "description": "(current: <CURRENT_PROTO_DIR>)" }
+      ]
+    }]
+  },
+  "protoc_path_exists": {
+    "questions": [{
+      "question": "Select the path to your protoc binary, or enter a custom path in the text field below.",
+      "header": "Protoc Path",
+      "multiSelect": false,
+      "options": [
+        { "label": "Keep current", "description": "<CURRENT_PROTOC_PATH>" },
+        { "label": "/usr/local/bin/protoc", "description": "Homebrew or system-wide install" },
+        { "label": "/usr/bin/protoc", "description": "System install" }
+      ]
+    }]
+  },
+  "protoc_path_first_time": {
+    "questions": [{
+      "question": "Select the path to your protoc binary, or enter a custom path in the text field below.",
+      "header": "Protoc Path",
+      "multiSelect": false,
+      "options": [
+        { "label": "/usr/local/bin/protoc", "description": "Homebrew or system-wide install" },
+        { "label": "/usr/bin/protoc", "description": "System install" }
+      ]
+    }]
+  },
+  "project_root_exists": {
+    "questions": [{
+      "question": "Enter the absolute path to your project root in the text field below, or keep current.",
+      "header": "Project Root",
+      "multiSelect": false,
+      "options": [
+        { "label": "Keep current", "description": "<CURRENT_PROJECT_ROOT>" },
+        { "label": "What is a project root?", "description": "The top-level directory of your project, usually containing build.gradle, pom.xml, or Makefile" }
+      ]
+    }]
+  },
+  "project_root_first_time": {
+    "questions": [{
+      "question": "Enter the absolute path to your project root in the text field below (e.g. /Users/you/Projects/myapp).",
+      "header": "Project Root",
+      "multiSelect": false,
+      "options": [
+        { "label": "What is a project root?", "description": "The top-level directory of your project, usually containing build.gradle, pom.xml, or Makefile" },
+        { "label": "Skip for now", "description": "Required for codegen — set this before running" }
+      ]
+    }]
+  },
+  "proto_dir_exists": {
+    "questions": [{
+      "question": "Select the proto directory (relative to project root), or enter a custom path in the text field below.",
+      "header": "Proto Directory",
+      "multiSelect": false,
+      "options": [
+        { "label": "Keep current", "description": "<CURRENT_PROTO_DIR>" },
+        { "label": "proto", "description": "Default: <project_root>/proto" },
+        { "label": "src/main/proto", "description": "Maven/Gradle standard layout" }
+      ]
+    }]
+  },
+  "proto_dir_first_time": {
+    "questions": [{
+      "question": "Select the proto directory (relative to project root), or enter a custom path in the text field below.",
+      "header": "Proto Directory",
+      "multiSelect": false,
+      "options": [
+        { "label": "proto", "description": "Default: <project_root>/proto" },
+        { "label": "src/main/proto", "description": "Maven/Gradle standard layout" }
+      ]
+    }]
+  },
+  "language": {
+    "questions": [{
+      "question": "Select output language.",
+      "header": "Language",
+      "multiSelect": false,
+      "options": [
+        { "label": "English", "description": "All output in English" },
+        { "label": "繁體中文", "description": "All output in Traditional Chinese" },
+        { "label": "日本語", "description": "All output in Japanese" }
+      ]
+    }]
+  }
+}

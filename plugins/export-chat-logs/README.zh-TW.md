@@ -4,7 +4,7 @@ Claude Code plugin — 收集 Claude Code 與 Cowork 聊天記錄，轉換為 HT
 
 > **注意：** 本 plugin 支援 **Claude Code (CLI)** 對話紀錄。**Claude Cowork** 的對話也可選擇性包含（需手動開啟，僅限 macOS）。Claude Desktop Chat 和 claude.ai 網頁版的對話存放於 Anthropic 伺服器端，無法透過本地檔案取得。
 
-[English](README.md)
+[English](README.md) | [日本語](README.ja.md)
 
 ## 安裝
 
@@ -55,8 +55,8 @@ claude --plugin-dir /path/to/devtools-plugins
 
 | 設定項目 | 選項 | 預設值 |
 |---------|------|--------|
-| 時區 | UTC+8、UTC+9、UTC+0，或透過「Other」自訂 | UTC+8 |
-| 語言 | English / 繁體中文 | English |
+| 時區 | UTC+8、UTC+9、UTC-5、UTC-8，或透過「Other」自訂 | UTC+8 |
+| 語言 | English / 繁體中文 / 日本語 | English |
 | 輸出格式 | HTML（語法高亮 + 互動式圖表）/ Markdown | HTML |
 | 包含 Cowork | 是 / 否（僅限 macOS） | 否 |
 
@@ -123,6 +123,11 @@ Claude Code 內建 `/insights` 指令（不需安裝任何 plugin），可對過
 - 包含統計報告（對話數、模型用量、工具用量、分類統計）
 - 打包成 zip 並傳送至 Telegram
 
+以下對話會自動略過，不列入匯出：
+
+- **無實質內容**：token 數為零，或 AI 輸出 < 100 tokens 且持續時間 < 60 秒
+- **純技能執行**：使用者訊息全為 slash command（如 `/export-chat-logs:upload`、`/exit`），且未涉及互動式問答（`AskUserQuestion`）
+
 ---
 
 ## 疑難排解
@@ -154,7 +159,12 @@ rm -rf ~/.claude/plugins/cache/devtools-plugins
 └── plugin.json             # Plugin 元資料
 skills/
 ├── upload/SKILL.md         # /export-chat-logs:upload
-└── setup/SKILL.md          # /export-chat-logs:setup
+└── setup/
+    ├── SKILL.md            # /export-chat-logs:setup
+    └── questions/          # 設定精靈問題定義
+        ├── en.json
+        ├── zh-TW.json
+        └── ja.json
 scripts/
 ├── common.py               # 共用邏輯（JSONL 解析、i18n/tz 載入）
 ├── upload.sh               # 主匯出流程
@@ -163,6 +173,8 @@ scripts/
 ├── convert_to_markdown.py  # JSONL → Markdown
 ├── generate_stats.py       # 統計報告（HTML 或 Markdown）
 └── i18n/                   # 多語言字串
+    ├── load.sh                 # i18n 載入器（載入對應語言檔）
     ├── en.sh / en.py           # 英文
-    └── zh_TW.sh / zh_TW.py    # 繁體中文
+    ├── zh_TW.sh / zh_TW.py    # 繁體中文
+    └── ja.sh / ja.py           # 日文
 ```

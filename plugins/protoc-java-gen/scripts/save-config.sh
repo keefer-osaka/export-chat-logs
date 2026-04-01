@@ -18,39 +18,10 @@ mkdir -p "$DATA_DIR"
 [ "$3" = "skip" ] || [ "$3" = "-" ] && set -- "$1" "$2" "" "$4"
 [ "$4" = "skip" ] || [ "$4" = "-" ] && set -- "$1" "$2" "$3" ""
 
-# PROTOC_PATH
-if [ -n "$1" ]; then
-  PROTOC_PATH="$1"
-elif [ -f "$ENV_FILE" ]; then
-  PROTOC_PATH=$(read_env_val PROTOC_PATH)
-fi
-
-# PROJECT_ROOT
-if [ -n "$2" ]; then
-  PROJECT_ROOT="$2"
-elif [ -f "$ENV_FILE" ]; then
-  PROJECT_ROOT=$(read_env_val PROJECT_ROOT)
-fi
-
-# PROTO_DIR
-if [ -n "$3" ]; then
-  PROTO_DIR="$3"
-elif [ -f "$ENV_FILE" ]; then
-  PROTO_DIR=$(read_env_val PROTO_DIR)
-  PROTO_DIR="${PROTO_DIR:-proto}"
-else
-  PROTO_DIR="proto"
-fi
-
-# PLUGIN_LANG
-if [ -n "$4" ]; then
-  PLUGIN_LANG="$4"
-elif [ -f "$ENV_FILE" ]; then
-  PLUGIN_LANG=$(read_env_val PLUGIN_LANG)
-  PLUGIN_LANG="${PLUGIN_LANG:-en}"
-else
-  PLUGIN_LANG="en"
-fi
+PROTOC_PATH=$(resolve_arg "$1" PROTOC_PATH "")
+PROJECT_ROOT=$(resolve_arg "$2" PROJECT_ROOT "")
+PROTO_DIR=$(resolve_arg "$3" PROTO_DIR "proto")
+PLUGIN_LANG=$(resolve_arg "$4" PLUGIN_LANG "en")
 
 printf 'PROTOC_PATH=%s\nPROJECT_ROOT=%s\nPROTO_DIR=%s\nPLUGIN_LANG=%s\n' \
   "$PROTOC_PATH" "$PROJECT_ROOT" "$PROTO_DIR" "$PLUGIN_LANG" > "$ENV_FILE"

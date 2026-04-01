@@ -11,36 +11,20 @@ import html as _html
 sys.path.insert(0, os.path.dirname(__file__))
 
 from pathlib import Path
-from common import S, LANG_CODE, truncate, format_local_ts, resolve_display_title, converter_main
+from common import S, LANG_CODE, CSS_BASE_VARS, truncate, safe_format_ts, resolve_display_title, converter_main
 
 # ── CSS ────────────────────────────────────────────────────────────────────────
 
-_CSS = """
+_CSS = CSS_BASE_VARS + """
 :root {
-  --bg: #ffffff;
-  --bg-alt: #f6f8fa;
-  --border: #d0d7de;
-  --text: #1f2328;
-  --text-muted: #656d76;
-  --user-bg: #eff6ff;
-  --user-border: #60a5fa;
-  --assistant-bg: #f0fdf4;
-  --assistant-border: #4ade80;
-  --link: #0969da;
+  --user-bg: #eff6ff; --user-border: #60a5fa;
+  --assistant-bg: #f0fdf4; --assistant-border: #4ade80;
   --code-bg: #f6f8fa;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0d1117;
-    --bg-alt: #161b22;
-    --border: #30363d;
-    --text: #e6edf3;
-    --text-muted: #8b949e;
-    --user-bg: #1c2a3d;
-    --user-border: #388bfd;
-    --assistant-bg: #152320;
-    --assistant-border: #3fb950;
-    --link: #388bfd;
+    --user-bg: #1c2a3d; --user-border: #388bfd;
+    --assistant-bg: #152320; --assistant-border: #3fb950;
     --code-bg: #161b22;
   }
 }
@@ -259,12 +243,7 @@ def format_html(messages, first_ts, cwd=None, title=None, models=None, source_la
     display_title = _html.escape(display_title_raw)
     lang_attr = LANG_CODE
 
-    date_str = ""
-    if first_ts:
-        try:
-            date_str = format_local_ts(first_ts)
-        except Exception:
-            date_str = first_ts
+    date_str = safe_format_ts(first_ts) if first_ts else ""
 
     # Build meta items
     meta_items = []
@@ -284,12 +263,7 @@ def format_html(messages, first_ts, cwd=None, title=None, models=None, source_la
         msgs_html_parts.append(f'<p class="no-messages">{_html.escape(S["no_messages"])}</p>')
     else:
         for role, text, ts in messages:
-            ts_str = ""
-            if ts:
-                try:
-                    ts_str = format_local_ts(ts)
-                except Exception:
-                    pass
+            ts_str = safe_format_ts(ts, fallback="") if ts else ""
             role_label = S["role_user"] if role == "user" else S["role_assistant"]
             body_html = _md_to_html(truncate(text))
             msgs_html_parts.append(

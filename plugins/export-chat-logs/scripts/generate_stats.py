@@ -10,14 +10,13 @@ Usage:
 import json
 import argparse
 import html as _html
-import time
 import os
 import sys
 sys.path.insert(0, os.path.dirname(__file__))
 
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
-from common import S, LANG_CODE, TZ_LOCAL, TZ_LABEL, make_output_path, parse_ts, compute_active_duration, parse_session, is_trivial_stats
+from common import S, LANG_CODE, CSS_BASE_VARS, TZ_LOCAL, TZ_LABEL, make_output_path, parse_ts, compute_active_duration, parse_session, is_trivial_stats, is_skill_only_session
 
 # Category keywords (matched against title + first few user messages)
 CATEGORIES = {
@@ -62,7 +61,7 @@ def categorize(title, first_messages):
 
 
 def find_recent_jsonl(projects_dir, days):
-    cutoff = time.time() - days * 86400
+    cutoff = datetime.now(timezone.utc).timestamp() - days * 86400
     results = []
     if not Path(projects_dir).is_dir():
         return results
@@ -206,24 +205,77 @@ def ascii_bar(data, total, width=24):
     return "\n".join(lines)
 
 
-def generate_report(sessions, days, out_path, skipped=0, source_label=None):
+def _prepare_report_data(sessions, days, source_label):
     now_str    = datetime.now(TZ_LOCAL).strftime("%Y-%m-%d %H:%M") + f" {TZ_LABEL}"
     start_date = (datetime.now(TZ_LOCAL) - timedelta(days=days)).strftime("%Y-%m-%d")
     end_date   = datetime.now(TZ_LOCAL).strftime("%Y-%m-%d")
-
     sessions.sort(key=lambda s: s["first_ts"] or "", reverse=True)
     d = _compute_stats(sessions)
-    total_input, total_output, total_all = (
-        d["total_input"], d["total_output"], d["total_all"])
-    total_cache_read, total_cache_creation = d["total_cache_read"], d["total_cache_creation"]
-    cat_input, cat_output, cat_count, cat_total = (
-        d["cat_input"], d["cat_output"], d["cat_count"], d["cat_total"])
-    tool_totals    = d["tool_totals"]
-    proj_tokens    = d["proj_tokens"]
-    proj_sessions  = d["proj_sessions"]
-    model_sessions = d["model_sessions"]
+    total_cache_all = d["total_cache_read"] + d["total_cache_creation"]
+    hit_rate_str = (
+        f"{d['total_cache_read'] / total_cache_all * 100:.1f}% "
+        f"(read: {fmt(d['total_cache_read'])} / total: {fmt(total_cache_all)})"
+        if total_cache_all > 0 else "N/A"
+    )
+    cat_count_display = {S.get(f"cat_{k}", k): v for k, v in d["cat_count"].items()}
+    cat_total_display = {S.get(f"cat_{k}", k): v for k, v in d["cat_total"].items()}
+    return dict(
+        now_str=now_str, start_date=start_date, end_date=end_date,
+        report_title=S["report_title_cowork"] if source_label == "cowork" else S["report_title"],
+        total_input=d["total_input"], total_output=d["total_output"], total_all=d["total_all"],
+        total_cache_read=d["total_cache_read"], total_cache_creation=d["total_cache_creation"],
+        hit_rate_str=hit_rate_str,
+        cat_input=d["cat_input"], cat_output=d["cat_output"],
+        cat_count=d["cat_count"], cat_total=d["cat_total"],
+        cat_count_display=cat_count_display, cat_total_display=cat_total_display,
+        tool_totals=d["tool_totals"], proj_tokens=d["proj_tokens"],
+        proj_sessions=d["proj_sessions"], model_sessions=d["model_sessions"],
+    )
 
-    report_title = S["report_title_cowork"] if source_label == "cowork" else S["report_title"]
+
+def _prepare_session_rows(sessions):
+    """Prepare session detail row data (shared between MD and HTML renderers)."""
+    has_model_col = any(s.get("models") for s in sessions)
+    rows = []
+    for s in sessions:
+        ts_str = ""
+        if s["first_ts"]:
+            try:
+                ts_str = parse_ts(s["first_ts"]).astimezone(TZ_LOCAL).strftime("%Y-%m-%d %H:%M")
+            except Exception:
+                ts_str = (s["first_ts"] or "")[:16]
+        rows.append({
+            "ts":     ts_str,
+            "title":  (s["title"] or S["untitled"])[:40],
+            "cat":    S.get(f"cat_{s['category']}", s['category']),
+            "dur":    fmt_duration(s["duration"]) if s.get("duration") is not None else "-",
+            "models": ", ".join(s.get("models") or []) or "-",
+            "inp":    s["input_tokens"],
+            "out":    s["output_tokens"],
+            "total":  s["input_tokens"] + s["output_tokens"],
+            "_s":     s,
+        })
+    return has_model_col, rows
+
+
+def _write_report(out_path, content, sessions, total_all, source_label):
+    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+    Path(out_path).write_text(content, encoding="utf-8")
+    msg_key = "msg_stats_done_cowork" if source_label == "cowork" else "msg_stats_done"
+    print(S[msg_key].format(sessions=len(sessions), tokens=fmt(total_all), path=out_path))
+
+
+def generate_report(sessions, days, out_path, skipped=0, source_label=None):
+    r = _prepare_report_data(sessions, days, source_label)
+    now_str, start_date, end_date = r["now_str"], r["start_date"], r["end_date"]
+    report_title = r["report_title"]
+    total_input, total_output, total_all = r["total_input"], r["total_output"], r["total_all"]
+    total_cache_read, total_cache_creation = r["total_cache_read"], r["total_cache_creation"]
+    hit_rate_str = r["hit_rate_str"]
+    cat_input, cat_output, cat_count, cat_total = r["cat_input"], r["cat_output"], r["cat_count"], r["cat_total"]
+    cat_count_display, cat_total_display = r["cat_count_display"], r["cat_total_display"]
+    tool_totals = r["tool_totals"]
+    proj_tokens, proj_sessions, model_sessions = r["proj_tokens"], r["proj_sessions"], r["model_sessions"]
 
     L = []
     L += [
@@ -236,12 +288,6 @@ def generate_report(sessions, days, out_path, skipped=0, source_label=None):
     ]
 
     # Summary
-    total_cache_all = total_cache_read + total_cache_creation
-    hit_rate_str = (
-        f"{total_cache_read / total_cache_all * 100:.1f}% "
-        f"(read: {fmt(total_cache_read)} / total: {fmt(total_cache_all)})"
-        if total_cache_all > 0 else "N/A"
-    )
     L += [
         f"## {S['section_summary']}", "",
         f"| {S['col_item']} | {S['col_count']} |",
@@ -266,12 +312,10 @@ def generate_report(sessions, days, out_path, skipped=0, source_label=None):
     L.append(mermaid_pie(S["pie_type_sessions"], cat_count))
     L.append("")
     if total_all > 0:
-        cat_total_display = {S.get(f"cat_{k}", k): v for k, v in cat_total.items()}
         L.append(mermaid_pie(S["pie_tokens_by_cat"], cat_total_display))
         L.append("")
 
     if cat_count:
-        cat_count_display = {S.get(f"cat_{k}", k): v for k, v in cat_count.items()}
         L += [
             "<details>",
             f"<summary>{S['ascii_label']}</summary>", "",
@@ -361,8 +405,8 @@ def generate_report(sessions, days, out_path, skipped=0, source_label=None):
         L += ["", "---", ""]
 
     # Session details
-    has_model_col = any(s.get("models") for s in sessions)
-    if sessions:
+    has_model_col, sess_rows = _prepare_session_rows(sessions)
+    if sess_rows:
         header_cols = [S["col_datetime"], S["col_title"], S["col_category"]]
         sep_cols    = ["----------", "------", "------"]
         if has_model_col:
@@ -378,28 +422,15 @@ def generate_report(sessions, days, out_path, skipped=0, source_label=None):
             "| " + " | ".join(header_cols) + " |",
             "|" + "|".join(sep_cols) + "|",
         ]
-        for s in sessions:
-            ts_str = ""
-            if s["first_ts"]:
-                try:
-                    ts_str = parse_ts(s["first_ts"]).astimezone(TZ_LOCAL).strftime("%Y-%m-%d %H:%M")
-                except Exception:
-                    ts_str = (s["first_ts"] or "")[:16]
-            title_display = (s["title"] or S["untitled"])[:40]
-            total_s   = s["input_tokens"] + s["output_tokens"]
-            cat_disp  = S.get(f"cat_{s['category']}", s['category'])
-            dur_str   = fmt_duration(s["duration"]) if s.get("duration") is not None else "-"
-            cells = [ts_str, title_display, cat_disp]
+        for row in sess_rows:
+            cells = [row["ts"], row["title"], row["cat"]]
             if has_model_col:
-                cells.append(", ".join(s.get("models") or []) or "-")
-            cells += [dur_str, fmt(s["input_tokens"]), fmt(s["output_tokens"]), fmt(total_s)]
+                cells.append(row["models"])
+            cells += [row["dur"], fmt(row["inp"]), fmt(row["out"]), fmt(row["total"])]
             L.append("| " + " | ".join(cells) + " |")
         L.append("")
 
-    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
-    Path(out_path).write_text("\n".join(L), encoding="utf-8")
-    msg_key = "msg_stats_done_cowork" if source_label == "cowork" else "msg_stats_done"
-    print(S[msg_key].format(sessions=len(sessions), tokens=fmt(total_all), path=out_path))
+    _write_report(out_path, "\n".join(L), sessions, total_all, source_label)
 
 
 # ── HTML report ────────────────────────────────────────────────────────────────
@@ -409,20 +440,10 @@ _CHART_COLORS = [
     "#4ecdc4", "#f7a072", "#c47eb5", "#a8d8b9", "#f4d35e",
 ]
 
-_STATS_CSS = """
-:root {
-  --bg: #ffffff; --bg-alt: #f6f8fa; --border: #d0d7de;
-  --text: #1f2328; --text-muted: #656d76;
-  --link: #0969da; --th-bg: #f6f8fa;
-  --accent: #0969da;
-}
+_STATS_CSS = CSS_BASE_VARS + """
+:root { --th-bg: #f6f8fa; --accent: #0969da; }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0d1117; --bg-alt: #161b22; --border: #30363d;
-    --text: #e6edf3; --text-muted: #8b949e;
-    --link: #388bfd; --th-bg: #161b22;
-    --accent: #388bfd;
-  }
+  :root { --th-bg: #161b22; --accent: #388bfd; }
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -526,24 +547,18 @@ def _bar_chart_html(data, total, show_count=True):
 
 
 def generate_html_report(sessions, days, out_path, conv_base=None, skipped=0, source_label=None):
-    now_str    = datetime.now(TZ_LOCAL).strftime("%Y-%m-%d %H:%M") + f" {TZ_LABEL}"
-    start_date = (datetime.now(TZ_LOCAL) - timedelta(days=days)).strftime("%Y-%m-%d")
-    end_date   = datetime.now(TZ_LOCAL).strftime("%Y-%m-%d")
+    r = _prepare_report_data(sessions, days, source_label)
+    now_str, start_date, end_date = r["now_str"], r["start_date"], r["end_date"]
     lang_attr  = LANG_CODE
+    report_title = r["report_title"]
+    total_input, total_output, total_all = r["total_input"], r["total_output"], r["total_all"]
+    total_cache_read, total_cache_creation = r["total_cache_read"], r["total_cache_creation"]
+    hit_rate_str = r["hit_rate_str"]
+    cat_input, cat_output, cat_count, cat_total = r["cat_input"], r["cat_output"], r["cat_count"], r["cat_total"]
+    cat_count_display, cat_total_display = r["cat_count_display"], r["cat_total_display"]
+    tool_totals = r["tool_totals"]
+    proj_tokens, proj_sessions, model_sessions = r["proj_tokens"], r["proj_sessions"], r["model_sessions"]
 
-    sessions.sort(key=lambda s: s["first_ts"] or "", reverse=True)
-    d = _compute_stats(sessions)
-    total_input, total_output, total_all = (
-        d["total_input"], d["total_output"], d["total_all"])
-    total_cache_read, total_cache_creation = d["total_cache_read"], d["total_cache_creation"]
-    cat_input, cat_output, cat_count, cat_total = (
-        d["cat_input"], d["cat_output"], d["cat_count"], d["cat_total"])
-    tool_totals    = d["tool_totals"]
-    proj_tokens    = d["proj_tokens"]
-    proj_sessions  = d["proj_sessions"]
-    model_sessions = d["model_sessions"]
-
-    report_title = S["report_title_cowork"] if source_label == "cowork" else S["report_title"]
     title_esc = _html.escape(report_title)
     parts = []
 
@@ -560,12 +575,6 @@ def generate_html_report(sessions, days, out_path, conv_base=None, skipped=0, so
     )
 
     # Summary section
-    total_cache_all = total_cache_read + total_cache_creation
-    hit_rate_str = (
-        f"{total_cache_read / total_cache_all * 100:.1f}% "
-        f"(read: {fmt(total_cache_read)} / total: {fmt(total_cache_all)})"
-        if total_cache_all > 0 else "N/A"
-    )
     summary_rows = [
         [S["row_input"],          fmt(total_input)],
         [S["row_output"],         fmt(total_output)],
@@ -595,9 +604,6 @@ def generate_html_report(sessions, days, out_path, conv_base=None, skipped=0, so
     )
 
     # Type distribution section
-    cat_count_display = {S.get(f"cat_{k}", k): v for k, v in cat_count.items()}
-    cat_total_display = {S.get(f"cat_{k}", k): v for k, v in cat_total.items()}
-
     type_charts = _bar_chart_html(cat_count_display, len(sessions))
     if total_all > 0:
         type_charts += f'<h3 style="margin:16px 0 8px;font-size:14px;font-weight:600;color:var(--text-muted)">{_html.escape(S["pie_tokens_by_cat"])}</h3>'
@@ -641,8 +647,8 @@ def generate_html_report(sessions, days, out_path, conv_base=None, skipped=0, so
         )
 
     # Session details
-    if sessions:
-        has_model_col = any(s.get("models") for s in sessions)
+    has_model_col, sess_rows = _prepare_session_rows(sessions)
+    if sess_rows:
         sess_headers = [S["col_datetime"], S["col_title"], S["col_category"]]
         sess_classes = ["", "", ""]
         if has_model_col:
@@ -654,39 +660,28 @@ def generate_html_report(sessions, days, out_path, conv_base=None, skipped=0, so
         sess_classes += ["num", "num", "num"]
 
         sess_rows_html = []
-        for s in sessions:
-            ts_str = ""
-            if s["first_ts"]:
-                try:
-                    ts_str = parse_ts(s["first_ts"]).astimezone(TZ_LOCAL).strftime("%Y-%m-%d %H:%M")
-                except Exception:
-                    ts_str = (s["first_ts"] or "")[:16]
-            title_text = (s["title"] or S["untitled"])[:40]
-            total_s   = s["input_tokens"] + s["output_tokens"]
-            cat_disp  = S.get(f"cat_{s['category']}", s['category'])
-            dur_str   = fmt_duration(s["duration"]) if s.get("duration") is not None else "-"
-
-            link = _compute_conv_link(s, conv_base, out_path)
+        for row in sess_rows:
+            link = _compute_conv_link(row["_s"], conv_base, out_path)
             if link:
                 title_cell = (
                     f'<td><a class="conv-link" href="{_html.escape(link)}" target="_blank">'
-                    f'{_html.escape(title_text)} ↗</a></td>'
+                    f'{_html.escape(row["title"])} ↗</a></td>'
                 )
             else:
-                title_cell = f'<td>{_html.escape(title_text)}</td>'
+                title_cell = f'<td>{_html.escape(row["title"])}</td>'
 
             cells = [
-                f'<td>{_html.escape(ts_str)}</td>',
+                f'<td>{_html.escape(row["ts"])}</td>',
                 title_cell,
-                f'<td>{_html.escape(cat_disp)}</td>',
+                f'<td>{_html.escape(row["cat"])}</td>',
             ]
             if has_model_col:
-                cells.append(f'<td>{_html.escape(", ".join(s.get("models") or []) or "-")}</td>')
+                cells.append(f'<td>{_html.escape(row["models"])}</td>')
             cells += [
-                f'<td class="num">{_html.escape(dur_str)}</td>',
-                f'<td class="num">{fmt(s["input_tokens"])}</td>',
-                f'<td class="num">{fmt(s["output_tokens"])}</td>',
-                f'<td class="num">{fmt(total_s)}</td>',
+                f'<td class="num">{_html.escape(row["dur"])}</td>',
+                f'<td class="num">{fmt(row["inp"])}</td>',
+                f'<td class="num">{fmt(row["out"])}</td>',
+                f'<td class="num">{fmt(row["total"])}</td>',
             ]
             sess_rows_html.append(f"<tr>{''.join(cells)}</tr>")
 
@@ -721,10 +716,7 @@ def generate_html_report(sessions, days, out_path, conv_base=None, skipped=0, so
 </body>
 </html>"""
 
-    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
-    Path(out_path).write_text(html_doc, encoding="utf-8")
-    msg_key = "msg_stats_done_cowork" if source_label == "cowork" else "msg_stats_done"
-    print(S[msg_key].format(sessions=len(sessions), tokens=fmt(total_all), path=out_path))
+    _write_report(out_path, html_doc, sessions, total_all, source_label)
 
 
 # ── main ───────────────────────────────────────────────────────────────────────
@@ -781,6 +773,9 @@ def main():
         s["project"] = cwd_val.rstrip("/").split("/")[-1] if cwd_val else "Unknown"
 
         if is_trivial_stats(s["output_tokens"], s["input_tokens"] + s["output_tokens"], s.get("duration")):
+            skipped += 1
+            continue
+        if is_skill_only_session(s.get("messages", []), s.get("tool_counts")):
             skipped += 1
             continue
 
