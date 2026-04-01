@@ -41,20 +41,24 @@ claude --plugin-dir /path/to/devtools-plugins
 
 ## 初始設定
 
-安裝後，執行以下指令設定 Telegram Bot Token、chat_id 和時區：
+安裝後，執行以下指令設定 Telegram Bot Token、chat_id 和偏好設定：
 
 ```
 /export-chat-logs:setup
 ```
 
-畫面會顯示設定項目編號選單，輸入要修改的編號（例如 `3 6`），只針對選定的項目回答：
+設定精靈使用可點選的 UI 介面。首次執行會引導你完成所有設定；之後再執行時，選單讓你選擇要修改的項目：
 
-- **Bot Token**：在 Telegram 找到 `@BotFather` → `/mybots` → 選擇你的 bot → API Token
-- **Chat ID**：在 Telegram 找到 `@userinfobot`，傳送任意訊息，它會回覆你的 chat_id
-- **時區偏移**：整數，例如 `8`（UTC+8，台灣）、`9`（UTC+9，日本）；預設為 `8`
-- **語言**：`1` 英文 / `2` 繁體中文；預設為 `1`
-- **輸出格式**：`1` HTML（語法高亮 + 互動式圖表）/ `2` Markdown；預設為 `1`
-- **包含 Cowork**：`1` 包含 / `2` 不包含；是否包含 Claude Cowork 對話（僅限 macOS）；預設為 `2`
+- **Bot Token**：在「Other」欄位貼上（從 Telegram `@BotFather` → `/mybots` → API Token 取得）
+- **Chat ID**：在「Other」欄位貼上（從 Telegram `@userinfobot` → 傳送任意訊息 → 複製 `id` 取得）
+- **偏好設定**：時區、語言、輸出格式、Cowork 包含與否——從可點選的選項中選擇
+
+| 設定項目 | 選項 | 預設值 |
+|---------|------|--------|
+| 時區 | UTC+8、UTC+9、UTC+0，或透過「Other」自訂 | UTC+8 |
+| 語言 | English / 繁體中文 | English |
+| 輸出格式 | HTML（語法高亮 + 互動式圖表）/ Markdown | HTML |
+| 包含 Cowork | 是 / 否（僅限 macOS） | 否 |
 
 設定儲存於 `~/.config/devtools-plugins/export-chat-logs/.env`（權限 600，不納入 repo）。
 
@@ -115,7 +119,7 @@ Claude Code 內建 `/insights` 指令（不需安裝任何 plugin），可對過
 - Claude Code：來自 `~/.claude/projects/` 的 JSONL 對話記錄
 - Claude Cowork（選擇性）：來自 `~/Library/Application Support/Claude/` 的對話記錄（僅限 macOS）
 - 每個對話轉換為一個 HTML 檔案（或 Markdown，依設定而定）
-- HTML 包含語法高亮（highlight.js）與互動式圖表（Mermaid.js）
+- HTML 包含語法高亮（highlight.js）與互動式圖表（CSS bar chart）
 - 包含統計報告（對話數、模型用量、工具用量、分類統計）
 - 打包成 zip 並傳送至 Telegram
 

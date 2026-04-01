@@ -41,20 +41,24 @@ Remove marketplace source:
 
 ## Initial Setup
 
-After installation, run the following command to configure your Telegram Bot Token, chat_id, and timezone:
+After installation, run the following command to configure your Telegram Bot Token, chat_id, and preferences:
 
 ```
 /export-chat-logs:setup
 ```
 
-A numbered menu is shown — select which settings to change (e.g. `3 6`), then answer only those prompts:
+The setup wizard uses a clickable UI. On first run, it walks through all settings. On subsequent runs, a menu lets you pick which settings to change:
 
-- **Bot Token**: In Telegram, find `@BotFather` → `/mybots` → select your bot → API Token
-- **Chat ID**: In Telegram, find `@userinfobot`, send any message, and it will reply with your chat_id
-- **Timezone offset**: Integer, e.g. `8` (UTC+8, Taiwan), `9` (UTC+9, Japan); default is `8`
-- **Language**: `1` English / `2` Traditional Chinese; default is `1`
-- **Output format**: `1` HTML (syntax highlighting + interactive charts) / `2` Markdown; default is `1`
-- **Include Cowork**: `1` Yes / `2` No; include Claude Cowork sessions (macOS only); default is `2`
+- **Bot Token**: Paste in the "Other" field (get it from Telegram `@BotFather` → `/mybots` → API Token)
+- **Chat ID**: Paste in the "Other" field (get it from Telegram `@userinfobot` → send any message → copy `id`)
+- **Preferences**: Timezone, Language, Output Format, and Cowork inclusion — select from clickable options
+
+| Setting | Options | Default |
+|---------|---------|---------|
+| Timezone | UTC+8, UTC+9, UTC+0, or custom via "Other" | UTC+8 |
+| Language | English / 繁體中文 | English |
+| Output format | HTML (syntax highlighting + charts) / Markdown | HTML |
+| Include Cowork | Yes / No (macOS only) | No |
 
 Settings are saved to `~/.config/devtools-plugins/export-chat-logs/.env` (permissions 600, not in repo).
 
@@ -115,7 +119,7 @@ It analyzes data from `~/.claude/usage-data/` and produces an HTML report coveri
 - Claude Code: JSONL session logs from `~/.claude/projects/`
 - Claude Cowork (opt-in): session logs from `~/Library/Application Support/Claude/` (macOS only)
 - Each session is converted to an HTML file (or Markdown if configured)
-- HTML includes syntax highlighting (highlight.js) and interactive charts (Mermaid.js)
+- HTML includes syntax highlighting (highlight.js) and interactive charts (CSS bar charts)
 - Includes a statistics report (session count, model usage, tool usage, category breakdown)
 - Packaged as a zip and sent to Telegram
 

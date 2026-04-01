@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 """
 Generate token usage statistics and conversation category reports for Claude Code.
-Outputs a Markdown or HTML report with Mermaid pie charts (no extra packages required).
+Outputs a Markdown or HTML report (no extra packages required).
 
 Usage:
   python3 generate_stats.py --projects ~/.claude/projects --days 7 --out report.md [--format md|html]
 """
 
 import json
-import re
 import argparse
 import html as _html
 import time
@@ -18,7 +17,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from pathlib import Path
 from datetime import datetime, timezone, timedelta
-from common import S, LANG_CODE, TZ_LOCAL, TZ_LABEL, make_output_path, parse_ts, compute_active_duration
+from common import S, LANG_CODE, TZ_LOCAL, TZ_LABEL, make_output_path, parse_ts, compute_active_duration, parse_session, is_trivial_stats
 
 # Category keywords (matched against title + first few user messages)
 CATEGORIES = {
@@ -60,111 +59,6 @@ def categorize(title, first_messages):
     best = max(scores, key=scores.get)
     return best if scores[best] > 0 else "Other"
 
-
-def extract_session_stats(filepath):
-    """Extract exact token usage from a Claude Code JSONL file."""
-    title = None
-    input_tokens = 0
-    output_tokens = 0
-    cache_tokens = 0
-    cache_read = 0
-    cache_creation = 0
-    first_messages = []
-    first_ts = None
-    last_ts = None
-    msg_timestamps = []
-    cwd = None
-    models_seen = []
-    tool_counts = {}
-
-    try:
-        with open(filepath, encoding="utf-8", errors="ignore") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    obj = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-
-                if obj.get("type") == "custom-title":
-                    t = obj.get("customTitle", "").strip()
-                    if t:
-                        title = t
-
-                if cwd is None:
-                    c = obj.get("cwd", "")
-                    if c:
-                        cwd = c
-
-                if obj.get("isMeta"):
-                    continue
-
-                msg = obj.get("message", {})
-                role = msg.get("role", "")
-
-                ts = obj.get("timestamp", "")
-                if ts and first_ts is None:
-                    first_ts = ts
-                if ts and role in ("user", "assistant"):
-                    last_ts = ts
-                    msg_timestamps.append(ts)
-
-                if role == "assistant":
-                    model = msg.get("model", "")
-                    if model and model not in models_seen:
-                        models_seen.append(model)
-
-                usage = msg.get("usage", {})
-                if usage:
-                    input_tokens  += usage.get("input_tokens", 0)
-                    output_tokens += usage.get("output_tokens", 0)
-                    cr = usage.get("cache_read_input_tokens", 0)
-                    cc = usage.get("cache_creation_input_tokens", 0)
-                    cache_read     += cr
-                    cache_creation += cc
-                    cache_tokens   += cr + cc
-
-                content = msg.get("content", "")
-                if isinstance(content, list):
-                    for block in content:
-                        if isinstance(block, dict) and block.get("type") == "tool_use":
-                            name = block.get("name", "")
-                            if name:
-                                tool_counts[name] = tool_counts.get(name, 0) + 1
-
-                if role in ("user", "assistant") and len(first_messages) < 6:
-                    if isinstance(content, str):
-                        text = content.strip()
-                    elif isinstance(content, list):
-                        parts = [b.get("text", "") for b in content
-                                 if isinstance(b, dict) and b.get("type") == "text"]
-                        text = " ".join(parts).strip()
-                    else:
-                        text = ""
-                    if text:
-                        first_messages.append((role, text, ts))
-
-    except Exception:
-        pass
-
-    return {
-        "title":          title,
-        "first_ts":       first_ts,
-        "last_ts":        last_ts,
-        "input_tokens":   input_tokens,
-        "output_tokens":  output_tokens,
-        "cache_tokens":   cache_tokens,
-        "cache_read":     cache_read,
-        "cache_creation": cache_creation,
-        "first_messages": first_messages,
-        "estimated":      False,
-        "cwd":            cwd,
-        "models":         models_seen,
-        "tool_counts":    tool_counts,
-        "msg_timestamps": msg_timestamps,
-    }
 
 
 def find_recent_jsonl(projects_dir, days):
@@ -242,7 +136,6 @@ def _compute_stats(sessions):
     """Compute aggregated stats dict from session list."""
     total_input    = sum(s["input_tokens"]  for s in sessions)
     total_output   = sum(s["output_tokens"] for s in sessions)
-    total_cache    = sum(s["cache_tokens"]  for s in sessions)
     total_cache_read   = sum(s.get("cache_read", 0)     for s in sessions)
     total_cache_creation = sum(s.get("cache_creation", 0) for s in sessions)
     total_all      = total_input + total_output
@@ -274,7 +167,7 @@ def _compute_stats(sessions):
     cat_total = {c: cat_input.get(c, 0) + cat_output.get(c, 0) for c in cat_count}
     return {
         "total_input": total_input, "total_output": total_output,
-        "total_cache": total_cache, "total_all": total_all,
+        "total_all": total_all,
         "total_cache_read": total_cache_read,
         "total_cache_creation": total_cache_creation,
         "cat_input": cat_input, "cat_output": cat_output,
@@ -320,8 +213,8 @@ def generate_report(sessions, days, out_path, skipped=0, source_label=None):
 
     sessions.sort(key=lambda s: s["first_ts"] or "", reverse=True)
     d = _compute_stats(sessions)
-    total_input, total_output, total_cache, total_all = (
-        d["total_input"], d["total_output"], d["total_cache"], d["total_all"])
+    total_input, total_output, total_all = (
+        d["total_input"], d["total_output"], d["total_all"])
     total_cache_read, total_cache_creation = d["total_cache_read"], d["total_cache_creation"]
     cat_input, cat_output, cat_count, cat_total = (
         d["cat_input"], d["cat_output"], d["cat_count"], d["cat_total"])
@@ -613,7 +506,7 @@ def _html_table(headers, rows, col_classes=None):
 
 
 def _bar_chart_html(data, total, show_count=True):
-    """Generate a horizontal bar chart as HTML. Replaces Mermaid pie for HTML reports."""
+    """Generate a horizontal bar chart as HTML."""
     rows = sorted(data.items(), key=lambda x: -x[1])
     parts = ['<div class="bar-chart">']
     for i, (label, value) in enumerate(rows):
@@ -640,8 +533,8 @@ def generate_html_report(sessions, days, out_path, conv_base=None, skipped=0, so
 
     sessions.sort(key=lambda s: s["first_ts"] or "", reverse=True)
     d = _compute_stats(sessions)
-    total_input, total_output, total_cache, total_all = (
-        d["total_input"], d["total_output"], d["total_cache"], d["total_all"])
+    total_input, total_output, total_all = (
+        d["total_input"], d["total_output"], d["total_all"])
     total_cache_read, total_cache_creation = d["total_cache_read"], d["total_cache_creation"]
     cat_input, cat_output, cat_count, cat_total = (
         d["cat_input"], d["cat_output"], d["cat_count"], d["cat_total"])
@@ -857,7 +750,7 @@ def main():
     sessions = []
     skipped = 0
     for fp in jsonl_files:
-        s = extract_session_stats(fp)
+        s = parse_session(fp)
         active_ts = s["last_ts"] or s["first_ts"]
         if not active_ts:
             continue
@@ -867,7 +760,7 @@ def main():
                 continue
         except Exception:
             pass
-        s["category"] = categorize(s["title"], s["first_messages"])
+        s["category"] = categorize(s["title"], s["messages"][:6])
         s["filepath"] = str(fp)
 
         # Duration: sum only consecutive gaps <= 30 min (active time, excludes resume breaks)
@@ -887,10 +780,7 @@ def main():
         cwd_val = s.get("cwd") or ""
         s["project"] = cwd_val.rstrip("/").split("/")[-1] if cwd_val else "Unknown"
 
-        # Skip trivial sessions (no meaningful interaction)
-        total_tok = s["input_tokens"] + s["output_tokens"]
-        dur = s.get("duration")
-        if total_tok == 0 or (s["output_tokens"] < 100 and (dur is None or dur < 60)):
+        if is_trivial_stats(s["output_tokens"], s["input_tokens"] + s["output_tokens"], s.get("duration")):
             skipped += 1
             continue
 

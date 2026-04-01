@@ -63,7 +63,6 @@ while IFS= read -r jsonl_file; do
   PROJECT_DISPLAY=$(echo "$PROJECT" | sed "s/^${HOME_ENCODED}-//;s/^${HOME_ENCODED}$//")
   OUT_DIR="$TMPDIR_PATH/claude-code/$PROJECT_DISPLAY"
   mkdir -p "$OUT_DIR"
-  python3 -c "import sys; sys.path.insert(0,'$PLUGIN_ROOT/scripts'); from common import is_trivial_session; sys.exit(0 if is_trivial_session(sys.argv[1]) else 1)" "$jsonl_file" 2>/dev/null && continue
   python3 "$CONVERTER" "$jsonl_file" "$OUT_DIR" --days "$DAYS" >/dev/null 2>&1 && CC_COUNT=$((CC_COUNT + 1))
 done < <(find "$HOME/.claude/projects" -name "*.jsonl" \
   -not -path "*/subagents/*" \
@@ -86,7 +85,6 @@ if [ "$INCLUDE_COWORK" = "true" ]; then
       CW_PROJECT="${CW_PROJECT:-unknown}"
       OUT_DIR="$TMPDIR_PATH/claude-cowork/$CW_PROJECT"
       mkdir -p "$OUT_DIR"
-      python3 -c "import sys; sys.path.insert(0,'$PLUGIN_ROOT/scripts'); from common import is_trivial_session; sys.exit(0 if is_trivial_session(sys.argv[1]) else 1)" "$jsonl_file" 2>/dev/null && continue
       python3 "$CONVERTER" "$jsonl_file" "$OUT_DIR" --days "$DAYS" --source-label cowork >/dev/null 2>&1 && CW_COUNT=$((CW_COUNT + 1))
     done < <(find "$COWORK_BASE" -name "*.jsonl" \
       -not -path "*/subagents/*" \

@@ -118,14 +118,20 @@ def extract_text_blocks(content):
     return "\n\n".join(parts)
 
 
-def convert_claude_jsonl(filepath):
-    """Parse a Claude Code session JSONL file. Returns (messages, first_ts, last_ts, title, cwd, models)."""
+def parse_session(filepath):
+    """Parse a Claude Code session JSONL file. Returns comprehensive session data."""
     messages = []
-    first_ts = None
-    last_ts = None
     title = None
     cwd = None
+    first_ts = None
+    last_ts = None
     models_seen = []
+    msg_timestamps = []
+    input_tokens = 0
+    output_tokens = 0
+    cache_read = 0
+    cache_creation = 0
+    tool_counts = {}
 
     with open(filepath, encoding="utf-8", errors="ignore") as f:
         for line in f:
@@ -142,21 +148,23 @@ def convert_claude_jsonl(filepath):
                 if t:
                     title = t
 
-            msg = obj.get("message", {})
-            role = msg.get("role", "")
-            if role not in ("user", "assistant"):
-                continue
+            if cwd is None:
+                c = obj.get("cwd", "")
+                if c:
+                    cwd = c
 
             if obj.get("isMeta"):
                 continue
 
+            msg = obj.get("message", {})
+            role = msg.get("role", "")
             ts = obj.get("timestamp", "")
+
             if ts and first_ts is None:
                 first_ts = ts
-            if ts:
+            if ts and role in ("user", "assistant"):
                 last_ts = ts
-            if cwd is None:
-                cwd = obj.get("cwd", "")
+                msg_timestamps.append(ts)
 
             if role == "assistant":
                 model = msg.get("model", "")
@@ -164,66 +172,51 @@ def convert_claude_jsonl(filepath):
                     models_seen.append(model)
 
             content = msg.get("content", "")
-            text = extract_text_blocks(content)
 
+            usage = msg.get("usage", {})
+            if usage:
+                input_tokens += usage.get("input_tokens", 0)
+                output_tokens += usage.get("output_tokens", 0)
+                cache_read += usage.get("cache_read_input_tokens", 0)
+                cache_creation += usage.get("cache_creation_input_tokens", 0)
+
+            if isinstance(content, list):
+                for block in content:
+                    if isinstance(block, dict) and block.get("type") == "tool_use":
+                        name = block.get("name", "")
+                        if name:
+                            tool_counts[name] = tool_counts.get(name, 0) + 1
+
+            if role not in ("user", "assistant"):
+                continue
+
+            text = extract_text_blocks(content)
             if text.strip():
                 messages.append((role, text.strip(), ts))
 
-    return messages, first_ts, last_ts, title, cwd, models_seen
+    return {
+        "messages": messages,
+        "title": title,
+        "cwd": cwd or "",
+        "first_ts": first_ts,
+        "last_ts": last_ts,
+        "models": models_seen,
+        "msg_timestamps": msg_timestamps,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "cache_read": cache_read,
+        "cache_creation": cache_creation,
+        "tool_counts": tool_counts,
+    }
 
 
-def generate_title_from_messages(messages):
-    """Generate a title from conversation content (used for unnamed sessions)."""
-    for role, text, ts in messages:
-        if role == "user" and text.strip():
-            first_line = text.strip().split('\n')[0].strip()
-            first_line = re.sub(r'[#*`_~\[\]<>]', '', first_line).strip()
-            first_line = re.sub(r'^[@!]', '', first_line).strip()
-            if len(first_line) > 3:
-                return first_line[:60]
-    return None
-
-
-def is_trivial_session(filepath):
-    """Return True if a session has no meaningful interaction and should be excluded from packaging."""
-    input_tokens = output_tokens = 0
-    timestamps = []
-    try:
-        with open(filepath, encoding="utf-8", errors="ignore") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    obj = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
-                if obj.get("isMeta"):
-                    continue
-                msg = obj.get("message", {})
-                usage = msg.get("usage", {})
-                if usage:
-                    input_tokens  += usage.get("input_tokens", 0)
-                    output_tokens += usage.get("output_tokens", 0)
-                ts = obj.get("timestamp", "")
-                if ts and msg.get("role") in ("user", "assistant"):
-                    timestamps.append(ts)
-    except Exception:
+def is_trivial_stats(output_tokens, total_tokens, duration):
+    """Check if pre-extracted session stats indicate a trivial (skippable) session."""
+    if total_tokens == 0:
         return True
-
-    if input_tokens + output_tokens == 0:
-        return True
-
     if output_tokens >= 100:
         return False
-
-    if len(timestamps) >= 2:
-        try:
-            active = compute_active_duration(timestamps)
-            return active < 60
-        except Exception:
-            pass
-    return True
+    return duration is None or duration < 60
 
 
 def make_output_path(out_dir, first_ts, title, ext=".md"):
@@ -265,10 +258,22 @@ def converter_main(format_fn, ext):
         idx = sys.argv.index("--source-label")
         if idx + 1 < len(sys.argv):
             source_label = sys.argv[idx + 1]
-    messages, first_ts, last_ts, title, cwd, models = convert_claude_jsonl(input_path)
+    session = parse_session(input_path)
+    messages = session["messages"]
+    first_ts = session["first_ts"]
+    last_ts = session["last_ts"]
+    title = session["title"]
+    cwd = session["cwd"]
+    models = session["models"]
     if not first_ts:
         mtime = os.path.getmtime(input_path)
         first_ts = datetime.fromtimestamp(mtime, tz=TZ_LOCAL).isoformat()
+    # Skip trivial sessions (no meaningful interaction)
+    total_tokens = session["input_tokens"] + session["output_tokens"]
+    tss = session["msg_timestamps"]
+    duration = compute_active_duration(tss) if len(tss) >= 2 else None
+    if is_trivial_stats(session["output_tokens"], total_tokens, duration):
+        sys.exit(2)
     active_ts = last_ts or first_ts
     if days_filter is not None and active_ts:
         try:
