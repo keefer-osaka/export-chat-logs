@@ -8,5 +8,5 @@
   },
   "repository": "https://github.com/keefer-osaka/devtools-plugins",
   "license": "MIT",
-  "keywords": ["chat-logs", "export", "telegram", "claude-code", "html", "markdown", "cowork"]
+  "keywords": ["chat-logs", "export", "telegram", "claude-code", "html", "markdown", "cowork", "auto", "cron"]
 }

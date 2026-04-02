@@ -26,3 +26,31 @@ MSG_DONE_COWORK="✅ Done! Claude Code: %CC_SESSIONS% sessions, Claude Cowork: %
 ERR_TOKEN_REQUIRED="❌ Token required: bash save-config.sh <token> <chat_id> [timezone] [lang] [format]"
 ERR_CHATID_REQUIRED="❌ Chat ID required: bash save-config.sh <token> <chat_id> [timezone] [lang] [format]"
 MSG_CONFIG_SAVED="✅ Configuration saved (Token + Chat ID + Timezone %TZ_LABEL% + Language %LANG% + Format %FORMAT% + Cowork %COWORK%)"
+
+# install-launchd.sh - weekday names (launchd: 0/7=Sunday, 1=Monday, ..., 6=Saturday)
+LAUNCHD_DAY_0="Sunday"
+LAUNCHD_DAY_1="Monday"
+LAUNCHD_DAY_2="Tuesday"
+LAUNCHD_DAY_3="Wednesday"
+LAUNCHD_DAY_4="Thursday"
+LAUNCHD_DAY_5="Friday"
+LAUNCHD_DAY_6="Saturday"
+LAUNCHD_DAY_7="Sunday"
+
+# install-launchd.sh - terminal success message
+MSG_LAUNCHD_INSTALLED="✅ launchd agent installed and loaded."
+MSG_LAUNCHD_SCHEDULE="Schedule: every %DAY_NAME% at %HH_MM% (local time)"
+MSG_LAUNCHD_PLIST="Plist: %PLIST_FILE%"
+MSG_LAUNCHD_LOG="Log:   %LOG_FILE%"
+MSG_LAUNCHD_TEST="To test immediately:"
+MSG_LAUNCHD_REMOVE="To remove:"
+MSG_LAUNCHD_SUMMARY_SAVED="Summary saved: %SUMMARY_FILE%"
+
+# install-launchd.sh - markdown summary file
+LAUNCHD_MD_TITLE="# export-chat-logs Auto Export"
+LAUNCHD_MD_SCHEDULE="Schedule"
+LAUNCHD_MD_SCHEDULE_VAL="every %DAY_NAME% at %HH_MM% (local time)"
+LAUNCHD_MD_LOG="Log"
+LAUNCHD_MD_COMMANDS="## Commands"
+LAUNCHD_MD_TEST="Test immediately:"
+LAUNCHD_MD_REMOVE="Remove:"

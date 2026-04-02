@@ -1,0 +1,39 @@
+{
+  "schedule_time": {
+    "questions": [{
+      "question": "自動エクスポートはいつ実行しますか？",
+      "header": "実行時間",
+      "multiSelect": false,
+      "options": [
+        { "label": "<SUGGESTED_TIME>（推奨）", "description": "デフォルトの推奨時間" },
+        { "label": "カスタム時間", "description": "下のテキスト欄に入力してください（例:「毎週日曜日の夜10時半」「毎週月曜日の朝8時」— 現地時間）" }
+      ]
+    }]
+  },
+
+  "export_days": {
+    "questions": [{
+      "question": "自動エクスポートは何日分のログを対象にしますか？",
+      "header": "エクスポート日数",
+      "multiSelect": false,
+      "options": [
+        { "label": "7 日間（推奨）", "description": "過去 1 週間" },
+        { "label": "14 日間", "description": "過去 2 週間" },
+        { "label": "30 日間", "description": "過去 1 か月" }
+      ]
+    }]
+  },
+
+  "plugin_scope": {
+    "questions": [{
+      "question": "export-chat-logs plugin はどのスコープにインストールされていますか？",
+      "header": "インストール範囲",
+      "multiSelect": false,
+      "options": [
+        { "label": "ユーザースコープ（推奨）", "description": "グローバルインストール — プロジェクトパス不要" },
+        { "label": "プロジェクトスコープ", "description": "特定のプロジェクトにインストール — 下のテキスト欄にそのプロジェクトの絶対パスを入力してください" },
+        { "label": "ローカル開発（git clone）", "description": "未インストール — 下のテキスト欄に plugin ディレクトリのパスを入力してください（例: /path/to/devtools-plugins/plugins/export-chat-logs）" }
+      ]
+    }]
+  }
+}

@@ -85,6 +85,19 @@ claude -p "/export-chat-logs:upload" --allowedTools "Bash,Read"
 claude -p "/export-chat-logs:upload 14" --allowedTools "Bash,Read"
 ```
 
+### 自動每週匯出（launchd）
+
+```
+/export-chat-logs:auto
+```
+
+設定精靈會詢問排程時間與匯出天數，並自動安裝 macOS **launchd** 排程代理，每週自動執行匯出。
+
+> **macOS 排程行為說明：**
+> - **螢幕鎖定** — 正常執行；使用者 session 仍處於活躍狀態。
+> - **休眠（Sleep）** — 休眠期間略過，但喚醒後 launchd 會立即補執行一次。
+> - **完全關機** — 略過的排程不會在下次開機後補執行。
+
 ---
 
 ## 相關：內建 `/insights` 指令
@@ -126,7 +139,7 @@ Claude Code 內建 `/insights` 指令（不需安裝任何 plugin），可對過
 以下對話會自動略過，不列入匯出：
 
 - **無實質內容**：token 數為零，或 AI 輸出 < 100 tokens 且持續時間 < 60 秒
-- **純技能執行**：使用者訊息全為 slash command（如 `/export-chat-logs:upload`、`/exit`），且未涉及互動式問答（`AskUserQuestion`）
+- **純技能執行**：只執行了 1 個 skill（`/exit` 等 meta command 不計），且無其他訊息或互動式問答（`AskUserQuestion`）
 
 ---
 
@@ -159,9 +172,15 @@ rm -rf ~/.claude/plugins/cache/devtools-plugins
 └── plugin.json             # Plugin 元資料
 skills/
 ├── upload/SKILL.md         # /export-chat-logs:upload
-└── setup/
-    ├── SKILL.md            # /export-chat-logs:setup
-    └── questions/          # 設定精靈問題定義
+├── setup/
+│   ├── SKILL.md            # /export-chat-logs:setup
+│   └── questions/          # 設定精靈問題定義
+│       ├── en.json
+│       ├── zh-TW.json
+│       └── ja.json
+└── auto/
+    ├── SKILL.md            # /export-chat-logs:auto
+    └── questions/          # 自動匯出精靈問題定義
         ├── en.json
         ├── zh-TW.json
         └── ja.json
@@ -169,6 +188,7 @@ scripts/
 ├── common.py               # 共用邏輯（JSONL 解析、i18n/tz 載入）
 ├── upload.sh               # 主匯出流程
 ├── save-config.sh          # 寫入 token + chat_id + 時區 + 語言 + 格式
+├── install-launchd.sh      # 產生 plist、載入 launchd agent、寫入摘要（由 /auto 呼叫）
 ├── convert_to_html.py      # JSONL → HTML（語法高亮 + 圖表）
 ├── convert_to_markdown.py  # JSONL → Markdown
 ├── generate_stats.py       # 統計報告（HTML 或 Markdown）

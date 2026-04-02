@@ -26,3 +26,31 @@ MSG_DONE_COWORK="✅ 完成！Claude Code：%CC_SESSIONS% 個對話，Claude Cow
 ERR_TOKEN_REQUIRED="❌ 需要提供 Token：bash save-config.sh <token> <chat_id> [timezone] [lang] [format]"
 ERR_CHATID_REQUIRED="❌ 需要提供 Chat ID：bash save-config.sh <token> <chat_id> [timezone] [lang] [format]"
 MSG_CONFIG_SAVED="✅ 設定已儲存（Token + Chat ID + 時區 %TZ_LABEL% + 語言 %LANG% + 格式 %FORMAT% + Cowork %COWORK%）"
+
+# install-launchd.sh - weekday names (launchd: 0/7=Sunday, 1=Monday, ..., 6=Saturday)
+LAUNCHD_DAY_0="日"
+LAUNCHD_DAY_1="一"
+LAUNCHD_DAY_2="二"
+LAUNCHD_DAY_3="三"
+LAUNCHD_DAY_4="四"
+LAUNCHD_DAY_5="五"
+LAUNCHD_DAY_6="六"
+LAUNCHD_DAY_7="日"
+
+# install-launchd.sh - terminal success message
+MSG_LAUNCHD_INSTALLED="✅ launchd agent 已安裝並載入。"
+MSG_LAUNCHD_SCHEDULE="排程：每週%DAY_NAME% %HH_MM%（本地時間）"
+MSG_LAUNCHD_PLIST="Plist：%PLIST_FILE%"
+MSG_LAUNCHD_LOG="Log：  %LOG_FILE%"
+MSG_LAUNCHD_TEST="立即測試執行："
+MSG_LAUNCHD_REMOVE="移除："
+MSG_LAUNCHD_SUMMARY_SAVED="摘要已儲存：%SUMMARY_FILE%"
+
+# install-launchd.sh - markdown summary file
+LAUNCHD_MD_TITLE="# export-chat-logs 自動匯出"
+LAUNCHD_MD_SCHEDULE="排程"
+LAUNCHD_MD_SCHEDULE_VAL="每週%DAY_NAME% %HH_MM%（本地時間）"
+LAUNCHD_MD_LOG="Log"
+LAUNCHD_MD_COMMANDS="## 指令"
+LAUNCHD_MD_TEST="立即測試執行："
+LAUNCHD_MD_REMOVE="移除："

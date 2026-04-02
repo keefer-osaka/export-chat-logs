@@ -8,7 +8,7 @@ PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 STATS_SCRIPT="$PLUGIN_ROOT/scripts/generate_stats.py"
 
 # Load locale strings
-source "$PLUGIN_ROOT/scripts/i18n/load.sh"
+source "$(dirname "$0")/i18n/load.sh"
 
 DAYS="${1:-7}"
 

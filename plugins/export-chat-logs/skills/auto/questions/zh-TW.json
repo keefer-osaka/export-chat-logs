@@ -1,0 +1,39 @@
+{
+  "schedule_time": {
+    "questions": [{
+      "question": "自動備份要在何時執行？",
+      "header": "執行時間",
+      "multiSelect": false,
+      "options": [
+        { "label": "<SUGGESTED_TIME>（建議）", "description": "預設建議時間" },
+        { "label": "自訂時間", "description": "在下方文字欄輸入（例如「每週日晚上十點半」或「每週一早上八點」，本地時間）" }
+      ]
+    }]
+  },
+
+  "export_days": {
+    "questions": [{
+      "question": "每次要包含幾天的紀錄？",
+      "header": "天數",
+      "multiSelect": false,
+      "options": [
+        { "label": "7 天（建議）", "description": "包含過去一週" },
+        { "label": "14 天", "description": "包含過去兩週" },
+        { "label": "30 天", "description": "包含過去一個月" }
+      ]
+    }]
+  },
+
+  "plugin_scope": {
+    "questions": [{
+      "question": "export-chat-logs plugin 安裝在哪個範圍？",
+      "header": "安裝範圍",
+      "multiSelect": false,
+      "options": [
+        { "label": "使用者範圍（建議）", "description": "全域安裝 — 不需要指定專案路徑" },
+        { "label": "專案範圍", "description": "安裝在特定專案 — 請在下方文字欄輸入該專案的絕對路徑" },
+        { "label": "本機開發（git clone）", "description": "未安裝 — 請在下方文字欄輸入 plugin 目錄路徑（例如 /path/to/devtools-plugins/plugins/export-chat-logs）" }
+      ]
+    }]
+  }
+}

@@ -85,6 +85,19 @@ claude -p "/export-chat-logs:upload" --allowedTools "Bash,Read"
 claude -p "/export-chat-logs:upload 14" --allowedTools "Bash,Read"
 ```
 
+### Automate weekly exports (launchd)
+
+```
+/export-chat-logs:auto
+```
+
+The setup wizard asks for your preferred schedule and export range, then installs a macOS **launchd** agent that runs automatically every week.
+
+> **macOS scheduling behavior:**
+> - **Screen locked** — job runs normally; the user session remains active.
+> - **Asleep** — job is skipped during sleep, but launchd fires a compensatory run immediately on wake.
+> - **Shut down** — missed jobs are not re-run after the next boot.
+
 ---
 
 ## Related: Built-in `/insights` Command
@@ -126,7 +139,7 @@ It analyzes data from `~/.claude/usage-data/` and produces an HTML report coveri
 The following sessions are automatically skipped:
 
 - **No meaningful content**: zero tokens, or AI output < 100 tokens and duration < 60 seconds
-- **Skill-only execution**: all user messages are slash commands (e.g. `/export-chat-logs:upload`, `/exit`) with no interactive prompts (`AskUserQuestion`)
+- **Skill-only execution**: only one real skill was invoked (meta commands like `/exit` don't count), with no other messages and no interactive prompts (`AskUserQuestion`)
 
 ---
 
@@ -159,9 +172,15 @@ Restart Claude Code after reinstalling.
 └── plugin.json             # Plugin metadata
 skills/
 ├── upload/SKILL.md         # /export-chat-logs:upload
-└── setup/
-    ├── SKILL.md            # /export-chat-logs:setup
-    └── questions/          # Setup wizard question definitions
+├── setup/
+│   ├── SKILL.md            # /export-chat-logs:setup
+│   └── questions/          # Setup wizard question definitions
+│       ├── en.json
+│       ├── zh-TW.json
+│       └── ja.json
+└── auto/
+    ├── SKILL.md            # /export-chat-logs:auto
+    └── questions/          # Auto export wizard question definitions
         ├── en.json
         ├── zh-TW.json
         └── ja.json
@@ -169,6 +188,7 @@ scripts/
 ├── common.py               # Shared logic (JSONL parsing, i18n/tz loading)
 ├── upload.sh               # Main export flow
 ├── save-config.sh          # Write token + chat_id + timezone + language + format
+├── install-launchd.sh      # Generate plist, load launchd agent, write summary (used by /auto)
 ├── convert_to_html.py      # JSONL → HTML (syntax highlighting + charts)
 ├── convert_to_markdown.py  # JSONL → Markdown
 ├── generate_stats.py       # Statistics report (HTML or Markdown)

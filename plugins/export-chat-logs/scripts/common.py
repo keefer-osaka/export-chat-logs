@@ -240,14 +240,24 @@ def is_trivial_stats(output_tokens, total_tokens, duration):
     return duration is None or duration < 60
 
 
+_META_COMMANDS = frozenset({
+    "/exit", "/compact", "/clear", "/help", "/init", "/login", "/logout",
+    "/config", "/cost", "/doctor", "/memory", "/permissions", "/review",
+    "/status", "/terminal-setup", "/vim", "/fast", "/slow",
+})
+
+
 def is_skill_only_session(messages, tool_counts=None):
-    """Check if session contains only slash-command invocations with no real discussion."""
+    """Check if session is a single slash-command invocation with no real discussion."""
     if tool_counts and "AskUserQuestion" in tool_counts:
         return False
     user_msgs = [text for role, text, _ in messages if role == "user"]
     if not user_msgs:
         return True
-    return all(re.match(r"^/\S+\s*$", m) for m in user_msgs)
+    if not all(re.match(r"^/\S+\s*$", m) for m in user_msgs):
+        return False
+    skills = [m for m in user_msgs if m.strip() not in _META_COMMANDS]
+    return len(skills) <= 1
 
 
 def make_output_path(out_dir, first_ts, title, ext=".md"):

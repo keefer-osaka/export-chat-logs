@@ -1,0 +1,39 @@
+{
+  "schedule_time": {
+    "questions": [{
+      "question": "When should the scheduled export run?",
+      "header": "Schedule Time",
+      "multiSelect": false,
+      "options": [
+        { "label": "<SUGGESTED_TIME> (Recommended)", "description": "Default suggestion" },
+        { "label": "Custom time", "description": "Enter day and time in the text field below (e.g. every Sunday at 10:30pm, every Monday at 8am — local time)" }
+      ]
+    }]
+  },
+
+  "export_days": {
+    "questions": [{
+      "question": "How many days of logs should each scheduled export cover?",
+      "header": "Export Days",
+      "multiSelect": false,
+      "options": [
+        { "label": "7 days (Recommended)", "description": "Cover the past week" },
+        { "label": "14 days", "description": "Cover the past two weeks" },
+        { "label": "30 days", "description": "Cover the past month" }
+      ]
+    }]
+  },
+
+  "plugin_scope": {
+    "questions": [{
+      "question": "Where is the export-chat-logs plugin installed?",
+      "header": "Plugin Scope",
+      "multiSelect": false,
+      "options": [
+        { "label": "User scope (Recommended)", "description": "Installed globally — no project directory needed" },
+        { "label": "Project scope", "description": "Installed in a specific project — enter the project path in the text field below" },
+        { "label": "Local dev (git clone)", "description": "Not installed — enter the plugin directory path in the text field below (e.g. /path/to/devtools-plugins/plugins/export-chat-logs)" }
+      ]
+    }]
+  }
+}

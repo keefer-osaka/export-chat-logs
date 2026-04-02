@@ -25,7 +25,7 @@ Extract these values from the .env:
 ## Step 2 — Determine language (`SETUP_LANG`)
 
 - **First-time** (`.env` does not exist): ask the user to pick a language (see below). Set `SETUP_LANG` to the result.
-- **Reconfigure** (`.env` exists): Set `SETUP_LANG = CURRENT_LANG`. Skip to Step 3.
+- **Reconfigure** (`.env` exists): Set `SETUP_LANG = CURRENT_LANG` (internal only — do not display this assignment). Skip to Step 3.
 
 **Language selection (first-time only) — this is the only trilingual question:**
 ```json
@@ -74,7 +74,7 @@ Use `Q["menu"]` — substitute all `<CURRENT_*>` and `<MASKED_TOKEN>` placeholde
 
 If a value is not set, use the phrase "not set" / "未設定" / "未設定" in the description.
 
-For unselected settings, use `skip` when calling `save-config.sh`.
+For unselected settings, use `skip` when calling `save-config.sh`. **Do NOT call AskUserQuestion for unselected steps — skip those steps entirely and go straight to Step 8.**
 
 ---
 
