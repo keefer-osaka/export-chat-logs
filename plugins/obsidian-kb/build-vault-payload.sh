@@ -29,18 +29,26 @@ done
 
 # Create destination directories
 mkdir -p \
+  "$PAYLOAD_SKILLS/_lib" \
   "$PAYLOAD_SKILLS/kb-ingest" \
   "$PAYLOAD_SKILLS/kb-lint" \
   "$PAYLOAD_SKILLS/kb-stats" \
   "$PAYLOAD_TEMPLATES"
+
+# Sync _lib (shared utilities, no SKILL.md or path templating needed)
+echo "→ Syncing _lib..."
+rsync -a --delete --delete-excluded --exclude='__pycache__/' --exclude='*.pyc' \
+  "$VAULT_DIR/.claude/skills/_lib/" \
+  "$PAYLOAD_SKILLS/_lib/"
 
 # Sync kb-ingest, kb-lint, kb-stats in parallel (SKILL.md + scripts/ per skill)
 _pids=()
 for _skill in kb-ingest kb-lint kb-stats; do
   (
     echo "→ Syncing ${_skill}..."
-    rsync -a --delete \
-      --include='SKILL.md' --include='scripts/' --include='scripts/**' --exclude='*' \
+    rsync -a --delete --delete-excluded \
+      --exclude='__pycache__/' --exclude='*.pyc' \
+      --include='SKILL.md' --include='scripts/' --include='scripts/**' --include='references/' --include='references/**' --exclude='*' \
       "$VAULT_DIR/.claude/skills/${_skill}/" \
       "$PAYLOAD_SKILLS/${_skill}/"
   ) &
@@ -59,8 +67,8 @@ rsync -a --delete \
   "$PAYLOAD_TEMPLATES/"
 
 # ── Template-ize hardcoded vault path in SKILL.md files ───────────────────
-echo "→ Replacing '$VAULT_DIR' → '__VAULT_DIR__' in SKILL.md files..."
-find "$PAYLOAD_SKILLS" -name "SKILL.md" -exec sed -i '' "s|$VAULT_DIR|__VAULT_DIR__|g" {} +
+echo "→ Replacing '$VAULT_DIR' → '__VAULT_DIR__' in SKILL.md and references/*.md files..."
+find "$PAYLOAD_SKILLS" -name "SKILL.md" -o -path "*/references/*.md" | xargs sed -i '' "s|$VAULT_DIR|__VAULT_DIR__|g"
 
 # ── Write _version file ────────────────────────────────────────────────────
 source "$SCRIPT_DIR/scripts/plugin-version.sh"

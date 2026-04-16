@@ -1,5 +1,7 @@
 # obsidian-kb
 
+[English](README.md) | [繁體中文](README.zh-TW.md)
+
 Obsidian をストレージとして使用する Claude Code の永続記憶ナレッジベース。会話履歴から知識を自動抽出し、構造化された wiki に整理し、任意のディレクトリからセマンティック検索を可能にします。
 
 ## 機能

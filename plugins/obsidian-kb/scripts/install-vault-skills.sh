@@ -28,7 +28,7 @@ TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP_DIR="$SKILLS_DIR/.backup-$TIMESTAMP"
 
 HAS_EXISTING=0
-for skill in kb-ingest kb-lint kb-stats kb-wiki; do
+for skill in kb-ingest kb-lint kb-stats kb-wiki _lib; do
   if [ -d "$SKILLS_DIR/$skill" ]; then
     HAS_EXISTING=1
     break
@@ -51,7 +51,7 @@ if [ "$HAS_EXISTING" -eq 1 ]; then
   fi
 
   mkdir -p "$BACKUP_DIR"
-  for skill in kb-ingest kb-lint kb-stats kb-wiki; do
+  for skill in kb-ingest kb-lint kb-stats kb-wiki _lib; do
     mv "$SKILLS_DIR/$skill" "$BACKUP_DIR/" 2>/dev/null || true
   done
   mv "$SKILLS_DIR/_version" "$BACKUP_DIR/" 2>/dev/null || true

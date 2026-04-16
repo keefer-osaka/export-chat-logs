@@ -23,14 +23,8 @@ SETUP_LANG="${7:-en}"
 [ "$PROJECT_DIR"    = "skip" ] && PROJECT_DIR=""
 [ "$PLUGIN_DIR_PATH" = "skip" ] && PLUGIN_DIR_PATH=""
 
-# Source locale strings
-_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-_LANG_FILE="${SETUP_LANG//-/_}"
-if [ -f "$_SCRIPT_DIR/i18n/${_LANG_FILE}.sh" ]; then
-  source "$_SCRIPT_DIR/i18n/${_LANG_FILE}.sh"
-else
-  source "$_SCRIPT_DIR/i18n/en.sh"
-fi
+# Source locale strings (and fmt() from shared)
+source "$(cd "${BASH_SOURCE[0]%/*}" && pwd)/i18n/load.sh"
 
 # Day name via indirect reference (LAUNCHD_DAY_0 … LAUNCHD_DAY_7)
 _DAY_VAR="LAUNCHD_DAY_${WEEKDAY}"
@@ -132,18 +126,7 @@ launchctl list | grep devtools-plugins || true
 CWD_PATH="$(pwd)"
 SUMMARY_FILE="${CWD_PATH}/export-chat-logs-auto.md"
 
-# Placeholder substitution helper
-_sub() {
-  local _s="$1"
-  _s="${_s//%DAY_NAME%/$DAY_NAME}"
-  _s="${_s//%HH_MM%/$HH_MM}"
-  _s="${_s//%PLIST_FILE%/$PLIST_FILE}"
-  _s="${_s//%LOG_FILE%/$LOG_FILE}"
-  _s="${_s//%SUMMARY_FILE%/$SUMMARY_FILE}"
-  printf '%s' "$_s"
-}
-
-_SCHED_VAL="$(_sub "$LAUNCHD_MD_SCHEDULE_VAL")"
+_SCHED_VAL="$(fmt "$LAUNCHD_MD_SCHEDULE_VAL" DAY_NAME "$DAY_NAME" HH_MM "$HH_MM")"
 _TB='```'
 
 cat > "$SUMMARY_FILE" << SUMMARY_EOF
@@ -170,11 +153,11 @@ SUMMARY_EOF
 # ── Print success message ─────────────────────────────────────────────────────
 
 echo ""
-echo "$(_sub "$MSG_LAUNCHD_INSTALLED")"
+echo "$MSG_LAUNCHD_INSTALLED"
 echo ""
-echo "$(_sub "$MSG_LAUNCHD_SCHEDULE")"
-echo "$(_sub "$MSG_LAUNCHD_PLIST")"
-echo "$(_sub "$MSG_LAUNCHD_LOG")"
+echo "$(fmt "$MSG_LAUNCHD_SCHEDULE" DAY_NAME "$DAY_NAME" HH_MM "$HH_MM")"
+echo "$(fmt "$MSG_LAUNCHD_PLIST" PLIST_FILE "$PLIST_FILE")"
+echo "$(fmt "$MSG_LAUNCHD_LOG" LOG_FILE "$LOG_FILE")"
 echo ""
 echo "$MSG_LAUNCHD_TEST"
 echo "  launchctl start ${PLIST_LABEL}"
@@ -183,4 +166,4 @@ echo "$MSG_LAUNCHD_REMOVE"
 echo "  launchctl unload ${PLIST_FILE}"
 echo "  rm ${PLIST_FILE}"
 echo ""
-echo "$(_sub "$MSG_LAUNCHD_SUMMARY_SAVED")"
+echo "$(fmt "$MSG_LAUNCHD_SUMMARY_SAVED" SUMMARY_FILE "$SUMMARY_FILE")"
