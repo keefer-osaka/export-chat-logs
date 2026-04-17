@@ -235,7 +235,8 @@ def get_messages_after_uuid(filepath, after_uuid):
                         "text": truncate(text.strip()),
                         "timestamp": ts,
                     })
-    except Exception:
+    except Exception as e:
+        print(f"[WARN] parse failed {filepath}: {e}", file=sys.stderr)
         return [], False
     return messages, found_pivot
 

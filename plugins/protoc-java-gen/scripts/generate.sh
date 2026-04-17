@@ -54,8 +54,15 @@ if [ ! -f "$PROTO_PATH" ]; then
   fi
 fi
 
+extract_proto_option() {
+  local key=$1
+  grep -v '^\s*//' "$PROTO_PATH" \
+    | grep -oE "option[[:space:]]+${key}[[:space:]]*=[[:space:]]*\"[^\"]*\"" \
+    | grep -o '"[^"]*"' | tr -d '"' | head -1
+}
+
 # --- Extract java_outer_classname ---
-JAVA_CLASS=$(grep -v '^\s*//' "$PROTO_PATH" | grep -o 'java_outer_classname\s*=\s*"[^"]*"' | grep -o '"[^"]*"' | tr -d '"')
+JAVA_CLASS=$(extract_proto_option "java_outer_classname")
 if [ -z "$JAVA_CLASS" ]; then
   fmt "$ERR_NO_CLASSNAME" PROTO_FILE "$(basename "$PROTO_PATH")"
   exit 1
@@ -77,7 +84,7 @@ if [ $PROTOC_EXIT -ne 0 ]; then
 fi
 
 # Locate generated file: parse java_package / package from proto to derive subdir
-JAVA_PKG=$(grep -v '^\s*//' "$PROTO_PATH" | grep -o 'option java_package\s*=\s*"[^"]*"' | grep -o '"[^"]*"' | tr -d '"' | head -1)
+JAVA_PKG=$(extract_proto_option "java_package")
 if [ -z "$JAVA_PKG" ]; then
   JAVA_PKG=$(grep -v '^\s*//' "$PROTO_PATH" | grep -o '^package\s\+[^;]*' | awk '{print $2}' | head -1)
 fi
@@ -88,13 +95,13 @@ if [ ! -f "$GENERATED" ]; then
   if [ "$MATCH_COUNT" -eq 1 ]; then
     GENERATED=$(find "$WORK_DIR" -name "$JAVA_FILE" -print -quit)
   elif [ "$MATCH_COUNT" -gt 1 ]; then
-    fmt "$ERR_PROTOC_FAILED" EXIT_CODE "multiple $JAVA_FILE found in output" >&2
+    fmt "$ERR_PROTO_MULTIPLE_MATCH" JAVA_FILE "$JAVA_FILE" >&2
     exit 1
   fi
 fi
 
 if [ -z "$GENERATED" ] || [ ! -f "$GENERATED" ]; then
-  fmt "$ERR_PROTOC_FAILED" EXIT_CODE "generated file not found"
+  fmt "$ERR_PROTO_GENERATED_NOT_FOUND" JAVA_FILE "$JAVA_FILE"
   exit 1
 fi
 
@@ -119,7 +126,7 @@ for TARGET in "${TARGETS[@]}"; do
     cp "$GENERATED" "$TARGET"
     fmt "$MSG_UPDATED" TARGET "$TARGET"
     UPDATED=$((UPDATED + 1))
-    SUBPROJECT=$(echo "$TARGET" | sed 's|/src/main/java/.*||')
+    SUBPROJECT="${TARGET%/src/main/java/*}"
     SUBPROJECTS+=("$SUBPROJECT")
   fi
 done

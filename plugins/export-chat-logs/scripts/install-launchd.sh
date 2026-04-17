@@ -9,7 +9,7 @@
 #   plugin_dir_path:  absolute path to plugin dir (local dev / git clone), or "skip"
 #   lang:             en | zh-TW | ja
 
-set -uo pipefail
+set -euo pipefail
 
 WEEKDAY="${1:?weekday required}"
 HOUR="${2:?hour required}"
@@ -25,6 +25,18 @@ SETUP_LANG="${7:-en}"
 
 # Source locale strings (and fmt() from shared)
 source "$(cd "${BASH_SOURCE[0]%/*}" && pwd)/i18n/load.sh"
+
+# Validate numeric args (must be integers in the expected ranges)
+_check_range() {
+  local _label="$1" _val="$2" _lo="$3" _hi="$4"
+  [[ "$_val" =~ ^[0-9]+$ ]] || { echo "ERR: $_label must be an integer (got: $_val)" >&2; exit 2; }
+  [ "$_val" -ge "$_lo" ] && [ "$_val" -le "$_hi" ] \
+    || { echo "ERR: $_label must be in [$_lo,$_hi] (got: $_val)" >&2; exit 2; }
+}
+_check_range weekday "$WEEKDAY" 0 7
+_check_range hour    "$HOUR"    0 23
+_check_range minute  "$MINUTE"  0 59
+_check_range days    "$DAYS"    1 365
 
 # Day name via indirect reference (LAUNCHD_DAY_0 … LAUNCHD_DAY_7)
 _DAY_VAR="LAUNCHD_DAY_${WEEKDAY}"
@@ -119,7 +131,8 @@ PLIST_EOF
 
 launchctl unload "$PLIST_FILE" 2>/dev/null || true
 launchctl load "$PLIST_FILE"
-launchctl list | grep devtools-plugins || true
+launchctl list | grep -q "$PLIST_LABEL" \
+  || { fmt "$ERR_LAUNCHD_NOT_LOADED" PLIST_LABEL "$PLIST_LABEL" PLIST_FILE "$PLIST_FILE" >&2; exit 1; }
 
 # ── Write summary markdown file ───────────────────────────────────────────────
 

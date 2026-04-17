@@ -19,3 +19,5 @@ MSG_NO_CHANGES="✅ 全部 %TOTAL% 個檔案皆為最新"
 
 # save-config.sh
 MSG_CONFIG_SAVED="✅ 設定已儲存（protoc: %PROTOC_PATH%, 專案: %PROJECT_ROOT%, proto 目錄: %PROTO_DIR%, 語言: %LANG%）"
+ERR_PROTO_MULTIPLE_MATCH="❌ 找到多個符合的生成檔案：%JAVA_FILE%"
+ERR_PROTO_GENERATED_NOT_FOUND="❌ 找不到生成的檔案：%JAVA_FILE%"

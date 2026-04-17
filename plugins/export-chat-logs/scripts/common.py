@@ -341,7 +341,7 @@ def converter_main(format_fn, ext):
             dt_check = parse_ts(active_ts).astimezone(timezone.utc)
             cutoff = datetime.now(timezone.utc) - timedelta(days=days_filter)
             if dt_check < cutoff:
-                sys.exit(0)
+                sys.exit(3)
         except Exception:
             pass
     content = format_fn(messages, active_ts, cwd=cwd, title=title, models=models, source_label=source_label, first_user_message=first_user_message)

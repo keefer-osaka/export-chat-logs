@@ -18,12 +18,9 @@ MSG_NEXT_STEPS="→ Start Claude Code in your vault directory to use /kb-ingest,
 # search.sh / search skill
 ERR_NOT_CONFIGURED="❌ Not configured. Please run: /obsidian-kb:setup"
 ERR_QMD_NOT_FOUND="❌ qmd not found. Configure it with /obsidian-kb:setup or install via: bun install -g @tobilu/qmd"
-MSG_QMD_FALLBACK="⚠️  qmd unavailable — falling back to wiki/index.md for manual navigation."
 MSG_NO_RESULTS="No results found. Falling back to lex search..."
 MSG_NO_RESULTS_LEX="No results in lex search either. Reading wiki/index.md for manual navigation."
 
 # upgrade skill
 ERR_VAULT_NOT_SET="❌ VAULT_DIR not set. Please run: /obsidian-kb:setup"
 ERR_VAULT_INVALID="❌ Vault directory is invalid (missing wiki/ or _schema/). Please run: /obsidian-kb:setup"
-MSG_UPGRADE_DONE="✅ Upgrade complete."
-MSG_UPGRADE_NOOP="✅ Already up to date (version %VERSION%)."

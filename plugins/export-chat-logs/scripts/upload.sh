@@ -2,7 +2,7 @@
 # upload.sh - Export Claude Code chat logs and send to Telegram
 # Usage: bash upload.sh [days=7]
 
-set -e
+set -euo pipefail
 
 PLUGIN_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 STATS_SCRIPT="$PLUGIN_ROOT/scripts/generate_stats.py"
@@ -43,8 +43,8 @@ fi
 
 # Create temp directory
 EXPORT_DATE=$(date +%Y%m%d)
-TMPDIR_PATH="$TMPDIR/chat-export-${EXPORT_DATE}-$$"
-rm -rf "$TMPDIR_PATH"
+TMPDIR_PATH="${TMPDIR:-/tmp}/chat-export-${EXPORT_DATE}-$$"
+trap 'rm -rf "${TMPDIR_PATH:-}"' EXIT
 mkdir -p "$TMPDIR_PATH/claude-code"
 if [ "$INCLUDE_COWORK" = "true" ]; then
   mkdir -p "$TMPDIR_PATH/claude-cowork"
@@ -131,7 +131,6 @@ fi
 # Exit early if no sessions found
 if [ "$CC_COUNT" -eq 0 ] && [ "$CW_COUNT" -eq 0 ]; then
   fmt "$WARN_NO_SESSIONS" DAYS "$DAYS"
-  rm -rf "$TMPDIR_PATH"
   exit 0
 fi
 
@@ -141,12 +140,15 @@ STATS_EXT=$( [ "$OUTPUT_FORMAT" = "html" ] && echo "html" || echo "md" )
 
 # Claude Code stats
 CC_STATS_FILE="$TMPDIR_PATH/${STATS_DATE}_${STATS_REPORT_SLUG}.${STATS_EXT}"
-python3 "$STATS_SCRIPT" \
+CC_STATS_OUT=$(python3 "$STATS_SCRIPT" \
   --projects "$HOME/.claude/projects" \
   --days "$DAYS" \
   --format "$OUTPUT_FORMAT" \
   --out "$CC_STATS_FILE" \
-  --conv-base "$TMPDIR_PATH/claude-code" >/dev/null 2>&1
+  --conv-base "$TMPDIR_PATH/claude-code" 2>"$TMPDIR_PATH/stats-cc.err") || {
+  fmt "$ERR_STATS_FAILED" LOG_FILE "$TMPDIR_PATH/stats-cc.err" >&2; exit 1
+}
+CC_SESSIONS=$(printf '%s' "$CC_STATS_OUT" | grep '^SESSIONS=' | cut -d= -f2)
 
 # Claude Cowork stats (only when there are Cowork sessions)
 if [ "$INCLUDE_COWORK" = "true" ] && [ "$CW_COUNT" -gt 0 ]; then
@@ -161,16 +163,15 @@ if [ "$INCLUDE_COWORK" = "true" ] && [ "$CW_COUNT" -gt 0 ]; then
   for COWORK_BASE in "${COWORK_PATHS[@]}"; do
     [ -d "$COWORK_BASE" ] && CW_STATS_CMD+=(--projects "$COWORK_BASE")
   done
-  "${CW_STATS_CMD[@]}" >/dev/null 2>&1
+  "${CW_STATS_CMD[@]}" >/dev/null 2>"$TMPDIR_PATH/stats-cw.err" || {
+    fmt "$ERR_STATS_FAILED" LOG_FILE "$TMPDIR_PATH/stats-cw.err" >&2; exit 1
+  }
 fi
-
-CC_SESSIONS=$(grep '^\*\*Sessions:\*\*' "$CC_STATS_FILE" 2>/dev/null | grep -o '[0-9]*' | head -1)
-CC_SESSIONS="${CC_SESSIONS:-$CC_COUNT}"
 
 # Package as zip
 GIT_USER_NAME=$(git config --global user.name 2>/dev/null | tr ' ' '_')
 GIT_USER_NAME="${GIT_USER_NAME:-$(whoami)}"
-ZIPNAME="$TMPDIR/chat-logs-${GIT_USER_NAME}-${EXPORT_DATE}.zip"
+ZIPNAME="${TMPDIR:-/tmp}/chat-logs-${GIT_USER_NAME}-${EXPORT_DATE}.zip"
 rm -f "$ZIPNAME"
 cd "$TMPDIR_PATH" && zip -r "$ZIPNAME" . -x "*.DS_Store" -x ".cc_done/*" -x ".cw_done/*" > /dev/null
 ZIP_SIZE=$(du -sh "$ZIPNAME" | cut -f1)
@@ -209,34 +210,35 @@ $_s5"
 SUMMARY_TEXT="${SUMMARY_TEXT:0:4000}"
 
 # Send text summary first
-curl -s -o /dev/null -X POST \
+curl -sSf -o /dev/null -X POST \
   "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
   -d chat_id="$CHAT_ID" \
-  --data-urlencode text="$SUMMARY_TEXT"
+  --data-urlencode text="$SUMMARY_TEXT" \
+  || { fmt "$ERR_TELEGRAM_FAILED" ENDPOINT sendMessage >&2; exit 1; }
 
 # Then send the file
 if [ "$ZIP_BYTES" -le 52428800 ]; then
-  curl -s -o /dev/null -X POST \
+  curl -sSf -o /dev/null -X POST \
     "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
     -F chat_id="$CHAT_ID" \
-    -F document=@"$ZIPNAME"
+    -F document=@"$ZIPNAME" \
+    || { fmt "$ERR_TELEGRAM_FAILED" ENDPOINT sendDocument >&2; exit 1; }
 else
   split -b 45m "$ZIPNAME" "${ZIPNAME}.part"
   PART_NUM=1
   PART_TOTAL=$(ls "${ZIPNAME}.part"* | wc -l | tr -d ' ')
   for part in "${ZIPNAME}.part"*; do
-    curl -s -o /dev/null -X POST \
+    curl -sSf -o /dev/null -X POST \
       "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
       -F chat_id="$CHAT_ID" \
       -F document=@"$part" \
-      -F caption="[${PART_NUM}/${PART_TOTAL}] $(basename "$part")"
+      -F caption="[${PART_NUM}/${PART_TOTAL}] $(basename "$part")" \
+      || { fmt "$ERR_TELEGRAM_FAILED" ENDPOINT "sendDocument part ${PART_NUM}/${PART_TOTAL}" >&2; exit 1; }
     PART_NUM=$((PART_NUM + 1))
   done
   rm -f "${ZIPNAME}.part"*
 fi
 
-# Clean up temp directory
-rm -rf "$TMPDIR_PATH"
 if [ "$INCLUDE_COWORK" = "true" ] && [ "$CW_COUNT" -gt 0 ]; then
   fmt "$MSG_DONE_COWORK" CC_SESSIONS "$CC_SESSIONS" CW_SESSIONS "$CW_COUNT" ZIP_SIZE "$ZIP_SIZE"
 else

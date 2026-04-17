@@ -5,6 +5,8 @@ ERR_NOT_CONFIGURED="❌ 未設定です。実行してください：/export-cha
 ERR_TOKEN_EMPTY="❌ Telegram Bot Token が空です。実行してください：/export-chat-logs:setup"
 ERR_CHATID_EMPTY="❌ Telegram chat_id が空です。実行してください：/export-chat-logs:setup"
 WARN_NO_SESSIONS="⚠️  過去 %DAYS% 日間にセッションが見つかりませんでした。スキップします。"
+ERR_STATS_FAILED="❌ 統計の生成に失敗しました。%LOG_FILE% を確認してください。"
+ERR_TELEGRAM_FAILED="❌ Telegram へのアップロードに失敗しました（%ENDPOINT%）。token・chat_id・ネットワークを確認してください。"
 
 # upload.sh - summary text (Telegram message)
 SUMMARY_HEADER="📦 チャットログエクスポート"
@@ -39,6 +41,7 @@ LAUNCHD_DAY_7="日曜日"
 
 # install-launchd.sh - terminal success message
 MSG_LAUNCHD_INSTALLED="✅ launchd エージェントをインストールして読み込みました。"
+ERR_LAUNCHD_NOT_LOADED="❌ launchd エージェントの読み込みに失敗しました：%PLIST_LABEL%。%PLIST_FILE% を確認して再実行してください。"
 MSG_LAUNCHD_SCHEDULE="スケジュール：毎週%DAY_NAME% %HH_MM%（ローカル時間）"
 MSG_LAUNCHD_PLIST="Plist：%PLIST_FILE%"
 MSG_LAUNCHD_LOG="ログ：  %LOG_FILE%"

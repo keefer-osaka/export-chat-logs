@@ -3,10 +3,11 @@
 # Usage: bash save-config.sh [token] [chat_id] [timezone_offset] [lang] [format] [include_cowork]
 #   Pass empty string "" or "skip" or "-" to keep the existing value for any argument.
 #   timezone_offset: integer, e.g. 8 for UTC+8 (Taiwan), 9 for UTC+9 (Japan), default 8
-#   lang: en or zh-TW, default en
+#   lang: en, zh-TW, or ja, default en
 #   format: html or md, default html
 #   include_cowork: true or false, default false
 
+set -euo pipefail
 DATA_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/devtools-plugins/export-chat-logs"
 ENV_FILE="$DATA_DIR/.env"
 
@@ -54,6 +55,6 @@ INCLUDE_COWORK=$(resolve_arg "$6" INCLUDE_COWORK "false")
 
 printf 'TELEGRAM_BOT_TOKEN=%s\nTELEGRAM_CHAT_ID=%s\nTIMEZONE_OFFSET=%s\nPLUGIN_LANG=%s\nOUTPUT_FORMAT=%s\nINCLUDE_COWORK=%s\n' \
   "$TELEGRAM_BOT_TOKEN" "$TELEGRAM_CHAT_ID" "$TZ_OFFSET" "$PLUGIN_LANG" "$OUTPUT_FORMAT" "$INCLUDE_COWORK" > "$ENV_FILE"
-chmod 600 "$ENV_FILE"
+chmod 600 "$ENV_FILE" 2>/dev/null || true
 TZ_LABEL=$(printf "UTC%+d" "$TZ_OFFSET")
 fmt "$MSG_CONFIG_SAVED" TZ_LABEL "$TZ_LABEL" LANG "$PLUGIN_LANG" FORMAT "$OUTPUT_FORMAT" COWORK "$INCLUDE_COWORK"

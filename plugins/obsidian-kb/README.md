@@ -18,7 +18,8 @@ After setup, these skills become available **inside your vault directory**:
 ## Installation
 
 ```
-/plugin install obsidian-kb
+/plugin marketplace add keefer-osaka/devtools-plugins
+/plugin install obsidian-kb@devtools-plugins
 /obsidian-kb:setup
 ```
 

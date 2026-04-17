@@ -187,7 +187,7 @@ skills/
 scripts/
 ├── common.py               # 共有ロジック（JSONL パース、i18n/tz 読み込み）
 ├── upload.sh               # メインエクスポートフロー
-├── save-config.sh          # token + chat_id + タイムゾーン + 言語 + 形式の書き込み
+├── save-config.sh          # token + chat_id + タイムゾーン + 言語 + 形式 + Cowork の書き込み
 ├── install-launchd.sh      # plist 生成・launchd エージェント読み込み・サマリー書き込み（/auto から呼び出し）
 ├── convert_to_html.py      # JSONL → HTML（シンタックスハイライト + グラフ）
 ├── convert_to_markdown.py  # JSONL → Markdown

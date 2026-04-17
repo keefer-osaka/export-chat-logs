@@ -187,7 +187,7 @@ skills/
 scripts/
 ├── common.py               # Shared logic (JSONL parsing, i18n/tz loading)
 ├── upload.sh               # Main export flow
-├── save-config.sh          # Write token + chat_id + timezone + language + format
+├── save-config.sh          # Write token + chat_id + timezone + language + format + cowork
 ├── install-launchd.sh      # Generate plist, load launchd agent, write summary (used by /auto)
 ├── convert_to_html.py      # JSONL → HTML (syntax highlighting + charts)
 ├── convert_to_markdown.py  # JSONL → Markdown

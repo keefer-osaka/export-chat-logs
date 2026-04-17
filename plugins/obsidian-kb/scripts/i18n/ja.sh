@@ -18,12 +18,9 @@ MSG_NEXT_STEPS="→ vault ディレクトリで Claude Code を起動すると /
 # search.sh / search skill
 ERR_NOT_CONFIGURED="❌ 設定されていません。先に実行してください：/obsidian-kb:setup"
 ERR_QMD_NOT_FOUND="❌ qmd が見つかりません。/obsidian-kb:setup で設定するか、インストール：bun install -g @tobilu/qmd"
-MSG_QMD_FALLBACK="⚠️  qmd が利用できません — wiki/index.md で手動ナビゲーションにフォールバックします。"
 MSG_NO_RESULTS="結果が見つかりません。lex 検索にフォールバック中..."
 MSG_NO_RESULTS_LEX="lex 検索でも結果なし。wiki/index.md で手動ナビゲーションします。"
 
 # upgrade skill
 ERR_VAULT_NOT_SET="❌ VAULT_DIR が設定されていません。先に実行してください：/obsidian-kb:setup"
 ERR_VAULT_INVALID="❌ Vault ディレクトリが無効です（wiki/ または _schema/ がありません）。先に実行してください：/obsidian-kb:setup"
-MSG_UPGRADE_DONE="✅ アップグレード完了。"
-MSG_UPGRADE_NOOP="✅ すでに最新バージョン（%VERSION%）です — 更新不要。"

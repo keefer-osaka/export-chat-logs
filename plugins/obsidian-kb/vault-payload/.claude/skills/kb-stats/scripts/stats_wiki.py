@@ -23,7 +23,7 @@ from pathlib import Path
 
 # ── _lib 共用模組 ─────────────────────────────────────────────────────────────
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "_lib")))
-from wiki_utils import resolve_vault_dir, parse_frontmatter, TW_TZ, parse_source_blocks, extract_fm_text  # noqa: E402
+from wiki_utils import resolve_vault_dir, parse_frontmatter, TW_TZ, parse_source_blocks, extract_fm_text, TOP_LEVEL_SKIP  # noqa: E402
 
 # ── 路徑設定 ──────────────────────────────────────────────────────────────────
 VAULT_DIR = Path(resolve_vault_dir(__file__))
@@ -34,8 +34,6 @@ REPORT_PATH = WIKI_DIR / "meta" / "stats-report.md"
 
 TODAY = datetime.now(TW_TZ).date()
 
-# wiki/ 頂層非內容檔
-TOP_LEVEL_SKIP = {"hot.md", "index.md", "log.md", "overview.md"}
 # 子目錄內跳過
 SUBDIR_SKIP = {"_index.md"}
 

@@ -20,7 +20,7 @@ from datetime import date, datetime
 
 # ── _lib 共用模組 ─────────────────────────────────────────────────────────────
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "_lib")))
-from wiki_utils import resolve_vault_dir, parse_frontmatter, WIKILINK_RE, TW_TZ  # noqa: E402
+from wiki_utils import resolve_vault_dir, parse_frontmatter, WIKILINK_RE, TW_TZ, TOP_LEVEL_SKIP  # noqa: E402
 
 # ── 路徑設定 ──────────────────────────────────────────────────────────────────
 VAULT_DIR = Path(resolve_vault_dir(__file__))
@@ -31,8 +31,6 @@ TODAY = datetime.now(TW_TZ).date()
 
 
 # ── 頁面收集 ──────────────────────────────────────────────────────────────────
-
-TOP_LEVEL_SKIP = {"hot.md", "index.md", "log.md", "overview.md"}
 
 def find_all_wiki_pages():
     pages = []
@@ -51,7 +49,7 @@ def find_all_index_entries():
     for idx in WIKI_DIR.rglob("_index.md"):
         text = idx.read_text(encoding="utf-8")
         for m in WIKILINK_RE.findall(text):
-            entries.add(m.lower().replace(" ", "-"))
+            entries.add(_link_target_stem(m))
         for m in re.findall(r'\[.*?\]\(([^)]+\.md)\)', text):
             entries.add(Path(m).stem.lower())
     return entries
@@ -134,6 +132,23 @@ def check_canonical_drift(parsed_pages):
     return issues
 
 
+FENCED_CODE_RE = re.compile(r'```.*?```', re.DOTALL)
+CODE_SPAN_RE = re.compile(r'``[^`].*?``|`[^`]+`')
+
+
+def _link_target_stem(link: str) -> str:
+    """[[page|alias]] / [[page#Heading]] → page stem（小寫、空格→dash）。"""
+    target = link.split("|", 1)[0].split("#", 1)[0]
+    return target.lower().replace(" ", "-")
+
+
+def _collect_wikilinks(text: str) -> set[str]:
+    """剝除 code block / code span 後收集 wikilink 目標 stem。"""
+    stripped = FENCED_CODE_RE.sub("", text)
+    stripped = CODE_SPAN_RE.sub("", stripped)
+    return {_link_target_stem(m) for m in WIKILINK_RE.findall(stripped)}
+
+
 def check_broken_links(parsed_pages):
     """wikilink [[xxx]] 指向不存在的頁面"""
     all_stems = {page.stem.lower() for page, *_ in parsed_pages}
@@ -141,14 +156,12 @@ def check_broken_links(parsed_pages):
     if transcripts_dir.exists():
         for p in transcripts_dir.glob("*.md"):
             all_stems.add(p.stem.lower())
-    FENCED_CODE_RE = re.compile(r'```.*?```', re.DOTALL)
-    CODE_SPAN_RE = re.compile(r'``[^`].*?``|`[^`]+`')
     issues = []
     for page, text, *_ in parsed_pages:
         stripped = FENCED_CODE_RE.sub("", text)
         stripped = CODE_SPAN_RE.sub("", stripped)
         for link in WIKILINK_RE.findall(stripped):
-            if link.lower().replace(" ", "-") not in all_stems:
+            if _link_target_stem(link) not in all_stems:
                 issues.append((page, link))
     return issues
 
@@ -157,16 +170,13 @@ def check_orphaned_pages(parsed_pages):
     """無任何 wikilink 指向的頁面"""
     all_links = set()
     for _page, text, *_ in parsed_pages:
-        for link in WIKILINK_RE.findall(text):
-            all_links.add(link.lower().replace(" ", "-"))
-    for special in ["hot.md", "index.md"]:
+        all_links |= _collect_wikilinks(text)
+    for special in TOP_LEVEL_SKIP:
         sp = WIKI_DIR / special
         if sp.exists():
-            for link in WIKILINK_RE.findall(sp.read_text(encoding="utf-8")):
-                all_links.add(link.lower().replace(" ", "-"))
+            all_links |= _collect_wikilinks(sp.read_text(encoding="utf-8"))
     for idx in WIKI_DIR.rglob("_index.md"):
-        for link in WIKILINK_RE.findall(idx.read_text(encoding="utf-8")):
-            all_links.add(link.lower().replace(" ", "-"))
+        all_links |= _collect_wikilinks(idx.read_text(encoding="utf-8"))
     return [page for page, *_ in parsed_pages if page.stem.lower() not in all_links]
 
 

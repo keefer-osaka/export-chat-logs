@@ -16,7 +16,6 @@ backfill_transcripts.py — 一次性回填歷史 session transcripts。
   python3 backfill_transcripts.py --limit N    # 只處理前 N 個 session（測試用）
 """
 
-import json
 import os
 import sys
 from datetime import datetime, timezone

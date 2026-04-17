@@ -187,7 +187,7 @@ skills/
 scripts/
 ├── common.py               # 共用邏輯（JSONL 解析、i18n/tz 載入）
 ├── upload.sh               # 主匯出流程
-├── save-config.sh          # 寫入 token + chat_id + 時區 + 語言 + 格式
+├── save-config.sh          # 寫入 token + chat_id + 時區 + 語言 + 格式 + Cowork
 ├── install-launchd.sh      # 產生 plist、載入 launchd agent、寫入摘要（由 /auto 呼叫）
 ├── convert_to_html.py      # JSONL → HTML（語法高亮 + 圖表）
 ├── convert_to_markdown.py  # JSONL → Markdown

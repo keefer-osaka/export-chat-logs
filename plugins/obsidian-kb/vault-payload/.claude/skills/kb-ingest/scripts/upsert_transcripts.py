@@ -88,9 +88,12 @@ def main():
                 transcript_abs = os.path.join(VAULT_DIR, base_transcript_rel)
                 new_last_uuid = get_last_message_uuid(jsonl_path) if jsonl_path else ""
 
-                append_delta_to_transcript(
+                ok = append_delta_to_transcript(
                     transcript_abs, session.get("messages", []), new_last_uuid
                 )
+                if not ok:
+                    errors.append(f"{session_id}: delta append failed, manifest not advanced")
+                    continue
 
                 entry = manifest.get(session_id, {})
                 upsert_session_manifest(

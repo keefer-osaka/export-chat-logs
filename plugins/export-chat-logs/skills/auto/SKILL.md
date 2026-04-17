@@ -20,7 +20,6 @@ Extract:
 - `CURRENT_TOKEN` (present if set)
 - `CURRENT_CHAT_ID` (present if set)
 - `CURRENT_LANG` (default: `en`)
-- `CURRENT_TZ` (timezone offset as integer, e.g. `9` for UTC+9; default: `8`)
 
 **If `CURRENT_TOKEN` or `CURRENT_CHAT_ID` is empty or the file does not exist:**
 Stop and print (EN/ZH-TW/JA trilingual):

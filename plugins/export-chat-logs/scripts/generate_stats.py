@@ -7,7 +7,6 @@ Usage:
   python3 generate_stats.py --projects ~/.claude/projects --days 7 --out report.md [--format md|html]
 """
 
-import json
 import argparse
 import html as _html
 import os
@@ -261,6 +260,7 @@ def _prepare_session_rows(sessions):
 def _write_report(out_path, content, sessions, total_all, source_label):
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     Path(out_path).write_text(content, encoding="utf-8")
+    print(f"SESSIONS={len(sessions)}")
     msg_key = "msg_stats_done_cowork" if source_label == "cowork" else "msg_stats_done"
     print(S[msg_key].format(sessions=len(sessions), tokens=fmt(total_all), path=out_path))
 
@@ -309,7 +309,7 @@ def generate_report(sessions, days, out_path, skipped=0, source_label=None):
 
     # Conversation type distribution
     L += [f"## {S['section_type_dist']}", ""]
-    L.append(mermaid_pie(S["pie_type_sessions"], cat_count))
+    L.append(mermaid_pie(S["pie_type_sessions"], cat_count_display))
     L.append("")
     if total_all > 0:
         L.append(mermaid_pie(S["pie_tokens_by_cat"], cat_total_display))
@@ -554,7 +554,7 @@ def generate_html_report(sessions, days, out_path, conv_base=None, skipped=0, so
     total_input, total_output, total_all = r["total_input"], r["total_output"], r["total_all"]
     total_cache_read, total_cache_creation = r["total_cache_read"], r["total_cache_creation"]
     hit_rate_str = r["hit_rate_str"]
-    cat_input, cat_output, cat_count, cat_total = r["cat_input"], r["cat_output"], r["cat_count"], r["cat_total"]
+    cat_count, cat_total = r["cat_count"], r["cat_total"]
     cat_count_display, cat_total_display = r["cat_count_display"], r["cat_total_display"]
     tool_totals = r["tool_totals"]
     proj_tokens, proj_sessions, model_sessions = r["proj_tokens"], r["proj_sessions"], r["model_sessions"]
@@ -782,16 +782,18 @@ def main():
         sessions.append(s)
 
     if not sessions:
+        title = S["report_title_cowork"] if args.source_label == "cowork" else S["report_title"]
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
         if args.fmt == "html":
             empty_html = (
                 f'<!DOCTYPE html><html lang="{LANG_CODE}"><head><meta charset="UTF-8">'
-                f'<title>{_html.escape(S["report_title"])}</title></head>'
+                f'<title>{_html.escape(title)}</title></head>'
                 f'<body><p>{_html.escape(S["no_sessions_found"])}</p></body></html>'
             )
             Path(args.out).write_text(empty_html, encoding="utf-8")
         else:
-            Path(args.out).write_text(f"# {S['report_title']}\n\n{S['no_sessions_found']}\n", encoding="utf-8")
+            Path(args.out).write_text(f"# {title}\n\n{S['no_sessions_found']}\n", encoding="utf-8")
+        print("SESSIONS=0")
         print(S["warn_no_files"])
         return
 

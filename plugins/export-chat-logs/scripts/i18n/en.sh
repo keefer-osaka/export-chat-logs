@@ -5,6 +5,8 @@ ERR_NOT_CONFIGURED="❌ Not configured. Please run: /export-chat-logs:setup"
 ERR_TOKEN_EMPTY="❌ Telegram Bot Token is empty. Please run: /export-chat-logs:setup"
 ERR_CHATID_EMPTY="❌ Telegram chat_id is empty. Please run: /export-chat-logs:setup"
 WARN_NO_SESSIONS="⚠️  No sessions found in the last %DAYS% days, skipping."
+ERR_STATS_FAILED="❌ Stats generation failed. Check %LOG_FILE% for details."
+ERR_TELEGRAM_FAILED="❌ Telegram upload failed at %ENDPOINT%. Check token, chat_id, and network."
 
 # upload.sh - summary text (Telegram message)
 SUMMARY_HEADER="📦 Chat Log Export"
@@ -39,6 +41,7 @@ LAUNCHD_DAY_7="Sunday"
 
 # install-launchd.sh - terminal success message
 MSG_LAUNCHD_INSTALLED="✅ launchd agent installed and loaded."
+ERR_LAUNCHD_NOT_LOADED="❌ launchd agent did not load: %PLIST_LABEL%. Inspect %PLIST_FILE% and re-run."
 MSG_LAUNCHD_SCHEDULE="Schedule: every %DAY_NAME% at %HH_MM% (local time)"
 MSG_LAUNCHD_PLIST="Plist: %PLIST_FILE%"
 MSG_LAUNCHD_LOG="Log:   %LOG_FILE%"

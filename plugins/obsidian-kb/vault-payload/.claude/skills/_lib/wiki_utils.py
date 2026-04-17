@@ -28,6 +28,10 @@ TW_TZ = timezone(timedelta(hours=8))
 
 WIKILINK_RE = re.compile(r'\[\[([^\]]+)\]\]')
 
+# ── wiki/ 頂層非內容檔（hot/index/log/overview 不視為內容頁）──────────────────
+
+TOP_LEVEL_SKIP = {"hot.md", "index.md", "log.md", "overview.md"}
+
 
 # ── 路徑工具 ──────────────────────────────────────────────────────────────────
 

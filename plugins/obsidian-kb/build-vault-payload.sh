@@ -68,7 +68,14 @@ rsync -a --delete \
 
 # ── Template-ize hardcoded vault path in SKILL.md files ───────────────────
 echo "→ Replacing '$VAULT_DIR' → '__VAULT_DIR__' in SKILL.md and references/*.md files..."
-find "$PAYLOAD_SKILLS" -name "SKILL.md" -o -path "*/references/*.md" | xargs sed -i '' "s|$VAULT_DIR|__VAULT_DIR__|g"
+find "$PAYLOAD_SKILLS" \( -name "SKILL.md" -o -path "*/references/*.md" \) -print0 \
+  | xargs -0 python3 -c "
+import sys, pathlib
+vault = sys.argv[1]
+for p in sys.argv[2:]:
+    f = pathlib.Path(p)
+    f.write_text(f.read_text(encoding='utf-8').replace(vault, '__VAULT_DIR__'), encoding='utf-8')
+" "$VAULT_DIR"
 
 # ── Write _version file ────────────────────────────────────────────────────
 source "$SCRIPT_DIR/scripts/plugin-version.sh"

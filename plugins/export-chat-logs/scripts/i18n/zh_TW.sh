@@ -5,6 +5,8 @@ ERR_NOT_CONFIGURED="❌ 尚未設定，請執行：/export-chat-logs:setup"
 ERR_TOKEN_EMPTY="❌ Telegram Bot Token 為空，請執行：/export-chat-logs:setup"
 ERR_CHATID_EMPTY="❌ Telegram chat_id 為空，請執行：/export-chat-logs:setup"
 WARN_NO_SESSIONS="⚠️  過去 %DAYS% 天內未找到任何對話，跳過。"
+ERR_STATS_FAILED="❌ 統計生成失敗，詳情請查看 %LOG_FILE%。"
+ERR_TELEGRAM_FAILED="❌ Telegram 上傳失敗（%ENDPOINT%）。請確認 token、chat_id 與網路。"
 
 # upload.sh - summary text (Telegram message)
 SUMMARY_HEADER="📦 對話紀錄匯出"
@@ -39,6 +41,7 @@ LAUNCHD_DAY_7="日"
 
 # install-launchd.sh - terminal success message
 MSG_LAUNCHD_INSTALLED="✅ launchd agent 已安裝並載入。"
+ERR_LAUNCHD_NOT_LOADED="❌ launchd agent 未載入：%PLIST_LABEL%。請檢查 %PLIST_FILE% 後重新執行。"
 MSG_LAUNCHD_SCHEDULE="排程：每週%DAY_NAME% %HH_MM%（本地時間）"
 MSG_LAUNCHD_PLIST="Plist：%PLIST_FILE%"
 MSG_LAUNCHD_LOG="Log：  %LOG_FILE%"

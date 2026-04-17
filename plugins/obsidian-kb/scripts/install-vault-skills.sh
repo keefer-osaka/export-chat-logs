@@ -55,7 +55,7 @@ if [ "$HAS_EXISTING" -eq 1 ]; then
     mv "$SKILLS_DIR/$skill" "$BACKUP_DIR/" 2>/dev/null || true
   done
   if [ -d "$SKILLS_DIR/kb-wiki" ]; then
-    mv "$SKILLS_DIR/kb-wiki" "$BACKUP_DIR/"
+    mv "$SKILLS_DIR/kb-wiki" "$BACKUP_DIR/" 2>/dev/null || true
     fmt "$MSG_KB_WIKI_RETIRED"
   fi
   mv "$SKILLS_DIR/_version" "$BACKUP_DIR/" 2>/dev/null || true
@@ -68,7 +68,14 @@ rsync -a "$PLUGIN_ROOT/vault-payload/.claude/skills/" "$SKILLS_DIR/"
 mkdir -p "$VAULT_DIR/_schema/templates"
 rsync -a "$PLUGIN_ROOT/vault-payload/_schema/templates/" "$VAULT_DIR/_schema/templates/"
 
-find "$SKILLS_DIR" -name "SKILL.md" -exec sed -i '' "s|__VAULT_DIR__|$VAULT_DIR|g" {} +
+find "$SKILLS_DIR" \( -name "SKILL.md" -o -path "*/references/*.md" \) -print0 \
+  | xargs -0 python3 -c "
+import sys, pathlib
+vault = sys.argv[1]
+for p in sys.argv[2:]:
+    f = pathlib.Path(p)
+    f.write_text(f.read_text(encoding='utf-8').replace('__VAULT_DIR__', vault), encoding='utf-8')
+" "$VAULT_DIR"
 
 printf '%s' "$PLUGIN_VERSION" > "$VERSION_FILE"
 printf 'obsidian-kb plugin %s installed at %s\n' "$PLUGIN_VERSION" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$SKILLS_DIR/_installed-by"

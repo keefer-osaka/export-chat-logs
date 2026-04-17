@@ -19,3 +19,5 @@ MSG_NO_CHANGES="✅ All %TOTAL% file(s) already up to date"
 
 # save-config.sh
 MSG_CONFIG_SAVED="✅ Configuration saved (protoc: %PROTOC_PATH%, project: %PROJECT_ROOT%, proto_dir: %PROTO_DIR%, lang: %LANG%)"
+ERR_PROTO_MULTIPLE_MATCH="❌ Multiple generated files matched: %JAVA_FILE%"
+ERR_PROTO_GENERATED_NOT_FOUND="❌ Generated file not found: %JAVA_FILE%"

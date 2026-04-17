@@ -14,7 +14,7 @@ QMD_COLLECTION="obsidian-wiki"
 if [ -f "$_ENV_FILE" ]; then
   while IFS= read -r _line; do
     _k="${_line%%=*}"
-    _v="${_line#*=}"; _v="${_v//\"/}"; _v="${_v//\'/}"; _v="${_v// /}"
+    _v="${_line#*=}"; _v="${_v//\"/}"; _v="${_v//\'/}"
     case "$_k" in
       VAULT_DIR)      [ -n "$_v" ] && VAULT_DIR="$_v" ;;
       PLUGIN_LANG)    [ -n "$_v" ] && PLUGIN_LANG="$_v" ;;

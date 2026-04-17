@@ -19,3 +19,5 @@ MSG_NO_CHANGES="✅ すべての %TOTAL% ファイルは最新です"
 
 # save-config.sh
 MSG_CONFIG_SAVED="✅ 設定を保存しました（protoc: %PROTOC_PATH%、プロジェクト: %PROJECT_ROOT%、proto ディレクトリ: %PROTO_DIR%、言語: %LANG%）"
+ERR_PROTO_MULTIPLE_MATCH="❌ 複数の生成ファイルが一致しました：%JAVA_FILE%"
+ERR_PROTO_GENERATED_NOT_FOUND="❌ 生成されたファイルが見つかりません：%JAVA_FILE%"

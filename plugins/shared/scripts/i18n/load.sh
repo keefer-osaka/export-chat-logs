@@ -9,7 +9,7 @@ _DATA_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/devtools-plugins/$_PLUGIN_NAME"
 
 _PLUGIN_LANG="en"
 if [ -f "$_DATA_DIR/.env" ]; then
-  _LANG_VAL=$(grep '^PLUGIN_LANG=' "$_DATA_DIR/.env" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+  _LANG_VAL=$(grep '^PLUGIN_LANG=' "$_DATA_DIR/.env" | cut -d'=' -f2 | tr -d '"' | tr -d "'")
   [ -n "$_LANG_VAL" ] && _PLUGIN_LANG="$_LANG_VAL"
 fi
 
@@ -24,7 +24,7 @@ fi
 
 # Helper: read a single value from ENV_FILE (must be set by the calling script)
 # Usage: read_env_val KEY
-read_env_val() { grep "^$1=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'" | tr -d ' '; }
+read_env_val() { grep "^$1=" "$ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'"; }
 
 # Helper: resolve optional argument — use arg if non-empty, else read from ENV_FILE, else use default
 # Usage: resolve_arg ARG KEY DEFAULT
@@ -48,19 +48,25 @@ normalize_skip_args() {
 # Usage: fmt "$MSG_TEMPLATE" KEY1 val1 KEY2 val2 ...
 # Note: cannot use ${var//%KEY%/val} — bash treats leading % as end-anchor.
 fmt() {
-  local _t="$1" _k _v _prefix _suffix; shift
+  local _t="$1" _k _v _result _remaining _before; shift
   while [ $# -ge 2 ]; do
     _k="$1" _v="$2"; shift 2
-    while true; do
-      case "$_t" in
+    _result=""
+    _remaining="$_t"
+    while [ -n "$_remaining" ]; do
+      case "$_remaining" in
         *"%${_k}%"*)
-          _prefix="${_t%%"%${_k}%"*}"
-          _suffix="${_t#*"%${_k}%"}"
-          _t="${_prefix}${_v}${_suffix}"
+          _before="${_remaining%%"%${_k}%"*}"
+          _remaining="${_remaining#*"%${_k}%"}"
+          _result="${_result}${_before}${_v}"
           ;;
-        *) break ;;
+        *)
+          _result="${_result}${_remaining}"
+          _remaining=""
+          ;;
       esac
     done
+    _t="$_result"
   done
   printf '%s\n' "$_t"
 }

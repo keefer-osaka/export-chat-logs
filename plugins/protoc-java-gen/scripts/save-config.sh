@@ -3,12 +3,16 @@
 # Usage: bash save-config.sh [protoc_path] [project_root] [proto_dir] [lang]
 #   Pass "skip" or "-" to keep the existing value for any argument.
 #   proto_dir: relative to project_root, default "proto"
-#   lang: en or zh-TW, default en
+#   lang: en, zh-TW, or ja, default en
+
+set -euo pipefail
 
 DATA_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/devtools-plugins/protoc-java-gen"
 ENV_FILE="$DATA_DIR/.env"
 
 source "$(dirname "$0")/i18n/load.sh"
+
+[ $# -eq 4 ] || { echo "Usage: bash save-config.sh <protoc_path> <project_root> <proto_dir> <lang>" >&2; exit 2; }
 
 mkdir -p "$DATA_DIR"
 
@@ -21,6 +25,6 @@ PLUGIN_LANG=$(resolve_arg "$4" PLUGIN_LANG "en")
 
 printf 'PROTOC_PATH=%s\nPROJECT_ROOT=%s\nPROTO_DIR=%s\nPLUGIN_LANG=%s\n' \
   "$PROTOC_PATH" "$PROJECT_ROOT" "$PROTO_DIR" "$PLUGIN_LANG" > "$ENV_FILE"
-chmod 600 "$ENV_FILE"
+chmod 600 "$ENV_FILE" 2>/dev/null || true
 
 fmt "$MSG_CONFIG_SAVED" PROTOC_PATH "$PROTOC_PATH" PROJECT_ROOT "$PROJECT_ROOT" PROTO_DIR "$PROTO_DIR" LANG "$PLUGIN_LANG"
