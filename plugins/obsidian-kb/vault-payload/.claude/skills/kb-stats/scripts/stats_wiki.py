@@ -23,7 +23,7 @@ from pathlib import Path
 
 # ── _lib 共用模組 ─────────────────────────────────────────────────────────────
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "_lib")))
-from wiki_utils import resolve_vault_dir, parse_frontmatter, TW_TZ, parse_source_blocks, extract_fm_text, TOP_LEVEL_SKIP  # noqa: E402
+from wiki_utils import resolve_vault_dir, parse_frontmatter, TW_TZ, parse_source_blocks, extract_fm_text, TOP_LEVEL_SKIP, collect_content_pages  # noqa: E402
 
 # ── 路徑設定 ──────────────────────────────────────────────────────────────────
 VAULT_DIR = Path(resolve_vault_dir(__file__))
@@ -33,64 +33,6 @@ SESSIONS_JSON_PATH = VAULT_DIR / "_schema" / "sessions.json"
 REPORT_PATH = WIKI_DIR / "meta" / "stats-report.md"
 
 TODAY = datetime.now(TW_TZ).date()
-
-# 子目錄內跳過
-SUBDIR_SKIP = {"_index.md"}
-
-
-# ── 收集 wiki 內容頁面 ────────────────────────────────────────────────────────
-
-def collect_content_pages() -> list[dict]:
-    """掃描 wiki/ 收集所有「內容頁面」（排除 _index.md、頂層工具檔）。"""
-    pages = []
-    for md_path in WIKI_DIR.rglob("*.md"):
-        rel = md_path.relative_to(WIKI_DIR)
-        parts = rel.parts
-        # 頂層工具檔
-        if len(parts) == 1 and parts[0] in TOP_LEVEL_SKIP:
-            continue
-        # _index.md
-        if parts[-1] in SUBDIR_SKIP:
-            continue
-        # meta/ 目錄
-        if parts[0] == "meta":
-            continue
-
-        try:
-            text = md_path.read_text(encoding="utf-8")
-        except Exception as e:
-            print(f"[WARN] stats_wiki read {md_path}: {e}", file=sys.stderr)
-            continue
-
-        fm, body = parse_frontmatter(text)
-        fm_text = extract_fm_text(text)
-
-        # 日期解析
-        updated_str = fm.get("updated", fm.get("created", ""))
-        updated_date = None
-        if updated_str:
-            try:
-                updated_date = date.fromisoformat(str(updated_str).strip())
-            except ValueError:
-                pass
-
-        # TL;DR 偵測
-        has_tldrs = bool(re.search(r'^##\s+TL;DR', body, re.MULTILINE))
-
-        # sources 解析
-        source_blocks = parse_source_blocks(fm_text)
-
-        pages.append({
-            "path": str(rel),
-            "type": fm.get("type", "unknown"),
-            "status": fm.get("status", "draft"),
-            "confidence": fm.get("confidence", ""),
-            "updated": updated_date,
-            "has_tldr": has_tldrs,
-            "source_count": len(source_blocks),
-            "source_blocks": source_blocks,
-        })
-    return pages
 
 
 # ── 統計計算 ──────────────────────────────────────────────────────────────────
@@ -332,7 +274,7 @@ def render_report(stats: dict, ts_stats: dict) -> str:
 
 def main():
     print("kb-stats 開始掃描...")
-    pages = collect_content_pages()
+    pages = collect_content_pages(WIKI_DIR)
     print(f"  掃描到 {len(pages)} 個內容頁面")
 
     stats = compute_stats(pages)

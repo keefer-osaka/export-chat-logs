@@ -18,3 +18,11 @@
 ## 安裝資訊
 
 由 `obsidian-kb` plugin 初始化。使用 `/kb-ingest` 開始擷取知識。
+
+## 主要主題
+
+（第一次 `/kb-ingest` 後由 LLM 填入）
+
+## 近期重點
+
+（第一次 `/kb-ingest` 後由 LLM 填入）

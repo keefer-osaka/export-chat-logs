@@ -11,7 +11,8 @@ MSG_VAULT_INITIALIZED="✅ Vault を初期化しました：%VAULT_DIR%"
 MSG_SKILLS_ALREADY_CURRENT="✅ Vault 内のスキルはすでに最新バージョン %VERSION% です — 更新不要。"
 MSG_SKILLS_INSTALLED="✅ Vault 内スキルをインストールしました（バージョン %VERSION%）：%VAULT_DIR%/.claude/skills/"
 MSG_SKILLS_UPGRADED="✅ Vault 内スキルを %OLD_VERSION% → %NEW_VERSION% にアップグレードしました。バックアップ：%BACKUP_DIR%"
-MSG_KB_WIKI_RETIRED="ℹ️  既存の kb-wiki/ をバックアップに移動しました — 代わりに /obsidian-kb:search を使用してください。"
+MSG_ROOT_DOCS_INSTALLED="✅ ルートドキュメントを配置しました：%FILES%"
+MSG_ROOT_DOCS_UPGRADED="ℹ️  ルートドキュメントを更新しました：%FILES%（バックアップ：%BACKUP_DIR%）"
 MSG_NEXT_STEPS="→ vault ディレクトリで Claude Code を起動すると /kb-ingest、/kb-lint、/kb-stats が使用できます
 → plugin のアップグレード後は /obsidian-kb:upgrade で vault 内スキルを同期してください"
 

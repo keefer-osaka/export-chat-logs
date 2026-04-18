@@ -43,7 +43,6 @@ The script handles:
 - rsync of new vault-payload into `$VAULT_DIR/.claude/skills/`
 - `__VAULT_DIR__` placeholder substitution in SKILL.md files
 - Writing `_version` and `_installed-by` markers
-- Retiring `kb-wiki/` if present
 
 ## Step 4 — Done
 

@@ -30,3 +30,18 @@ Append an entry for this ingest run:
 - 矛盾標記：N 個
 - 水位線：<timestamp>
 ```
+
+## wiki/overview.md
+
+知識庫全局摘要，由 `update_overview.py` + LLM 混合維護：
+
+**機械段（腳本自動覆寫）**
+- `## 狀態`：初始化日期、總頁面數（按類型）、最後 ingest、水位線、Transcripts 計數
+
+**敘事段（LLM 維護，腳本不觸碰）**
+- `## 主要主題`：知識庫的主要領域，長期有效，重大轉向時更新
+- `## 近期重點`：最近 3–5 次 ingest 的重點，每次 ingest append 一條
+
+**靜態段（永不更動）**
+- `## 架構說明`：三層架構說明
+- `## 安裝資訊`：plugin 安裝記錄

@@ -67,6 +67,18 @@ rsync -a --delete \
   "$VAULT_DIR/_schema/templates/" \
   "$PAYLOAD_TEMPLATES/"
 
+# ── Root docs ──────────────────────────────────────────────────────────────
+echo "→ Syncing root docs..."
+PAYLOAD_ROOT_DOCS="$SCRIPT_DIR/vault-payload/root-docs"
+mkdir -p "$PAYLOAD_ROOT_DOCS"
+for _doc in CLAUDE.md WIKI.md README.md; do
+  if [ -f "$VAULT_DIR/$_doc" ]; then
+    rsync -a "$VAULT_DIR/$_doc" "$PAYLOAD_ROOT_DOCS/$_doc"
+  else
+    echo "  ⚠️  $VAULT_DIR/$_doc not found — skipping"
+  fi
+done
+
 # ── Template-ize hardcoded vault path in SKILL.md files ───────────────────
 echo "→ Replacing '$VAULT_DIR' → '__VAULT_DIR__' in SKILL.md and references/*.md files..."
 find "$PAYLOAD_SKILLS" \( -name "SKILL.md" -o -path "*/references/*.md" \) -print0 \

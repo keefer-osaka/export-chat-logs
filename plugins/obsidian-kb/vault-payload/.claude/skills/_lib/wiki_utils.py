@@ -18,7 +18,9 @@ Import 方式（在各 skill 的 scripts/*.py 中）：
 
 import os
 import re
+import sys
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
 
 # ── 時區 ──────────────────────────────────────────────────────────────────────
 
@@ -142,3 +144,55 @@ def parse_source_blocks(fm_text: str) -> list:
     if current:
         blocks.append(current)
     return blocks
+
+
+# ── Wiki 內容頁面掃描 ─────────────────────────────────────────────────────────
+
+def collect_content_pages(wiki_dir, today=None) -> list[dict]:
+    """掃描 wiki_dir/ 收集所有「內容頁面」（排除 _index.md、頂層工具檔、meta/）。"""
+    if today is None:
+        today = datetime.now(TW_TZ).date()
+    SUBDIR_SKIP = {"_index.md"}
+    pages = []
+    for md_path in Path(wiki_dir).rglob("*.md"):
+        rel = md_path.relative_to(wiki_dir)
+        parts = rel.parts
+        if len(parts) == 1 and parts[0] in TOP_LEVEL_SKIP:
+            continue
+        if parts[-1] in SUBDIR_SKIP:
+            continue
+        if parts[0] == "meta":
+            continue
+
+        try:
+            text = md_path.read_text(encoding="utf-8")
+        except Exception as e:
+            print(f"[WARN] collect_content_pages read {md_path}: {e}", file=sys.stderr)
+            continue
+
+        fm, body = parse_frontmatter(text)
+        fm_text = extract_fm_text(text)
+
+        updated_str = fm.get("updated", fm.get("created", ""))
+        updated_date = None
+        if updated_str:
+            try:
+                from datetime import date as _date
+                updated_date = _date.fromisoformat(str(updated_str).strip())
+            except ValueError:
+                pass
+
+        has_tldrs = bool(re.search(r'^##\s+TL;DR', body, re.MULTILINE))
+        source_blocks = parse_source_blocks(fm_text)
+
+        pages.append({
+            "path": str(rel),
+            "type": fm.get("type", "unknown"),
+            "status": fm.get("status", "draft"),
+            "confidence": fm.get("confidence", ""),
+            "updated": updated_date,
+            "has_tldr": has_tldrs,
+            "source_count": len(source_blocks),
+            "source_blocks": source_blocks,
+        })
+    return pages

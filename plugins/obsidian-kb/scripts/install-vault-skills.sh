@@ -28,7 +28,7 @@ TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP_DIR="$SKILLS_DIR/.backup-$TIMESTAMP"
 
 HAS_EXISTING=0
-for skill in kb-ingest kb-lint kb-stats kb-wiki _lib; do
+for skill in kb-ingest kb-lint kb-stats _lib; do
   if [ -d "$SKILLS_DIR/$skill" ]; then
     HAS_EXISTING=1
     break
@@ -54,10 +54,6 @@ if [ "$HAS_EXISTING" -eq 1 ]; then
   for skill in kb-ingest kb-lint kb-stats _lib; do
     mv "$SKILLS_DIR/$skill" "$BACKUP_DIR/" 2>/dev/null || true
   done
-  if [ -d "$SKILLS_DIR/kb-wiki" ]; then
-    mv "$SKILLS_DIR/kb-wiki" "$BACKUP_DIR/" 2>/dev/null || true
-    fmt "$MSG_KB_WIKI_RETIRED"
-  fi
   mv "$SKILLS_DIR/_version" "$BACKUP_DIR/" 2>/dev/null || true
   mv "$SKILLS_DIR/_installed-by" "$BACKUP_DIR/" 2>/dev/null || true
 fi
@@ -67,6 +63,28 @@ rsync -a "$PLUGIN_ROOT/vault-payload/.claude/skills/" "$SKILLS_DIR/"
 
 mkdir -p "$VAULT_DIR/_schema/templates"
 rsync -a "$PLUGIN_ROOT/vault-payload/_schema/templates/" "$VAULT_DIR/_schema/templates/"
+
+# ── Root docs ──────────────────────────────────────────────────────────────
+if [ -d "$PLUGIN_ROOT/vault-payload/root-docs" ]; then
+  _DEPLOYED_DOCS=""
+  for _doc in CLAUDE.md WIKI.md README.md; do
+    if [ -f "$PLUGIN_ROOT/vault-payload/root-docs/$_doc" ]; then
+      if [ "$HAS_EXISTING" -eq 1 ] && [ -f "$VAULT_DIR/$_doc" ]; then
+        mkdir -p "$BACKUP_DIR/root-docs"
+        cp "$VAULT_DIR/$_doc" "$BACKUP_DIR/root-docs/$_doc"
+      fi
+      cp "$PLUGIN_ROOT/vault-payload/root-docs/$_doc" "$VAULT_DIR/$_doc"
+      _DEPLOYED_DOCS="$_DEPLOYED_DOCS $_doc"
+    fi
+  done
+  if [ -n "$_DEPLOYED_DOCS" ]; then
+    if [ "$HAS_EXISTING" -eq 1 ]; then
+      fmt "$MSG_ROOT_DOCS_UPGRADED" FILES "${_DEPLOYED_DOCS## }" BACKUP_DIR "$BACKUP_DIR/root-docs"
+    else
+      fmt "$MSG_ROOT_DOCS_INSTALLED" FILES "${_DEPLOYED_DOCS## }"
+    fi
+  fi
+fi
 
 find "$SKILLS_DIR" \( -name "SKILL.md" -o -path "*/references/*.md" \) -print0 \
   | xargs -0 python3 -c "

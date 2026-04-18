@@ -107,6 +107,18 @@ echo '<sessions_json>' | python3 __VAULT_DIR__/.claude/skills/kb-ingest/scripts/
 **索引格式規範**（_index.md / hot.md / log.md）：
 Read `__VAULT_DIR__/.claude/skills/kb-ingest/references/index-formats.md`
 
+## 步驟 5.1：更新 overview.md
+
+```bash
+python3 __VAULT_DIR__/.claude/skills/kb-ingest/scripts/update_overview.py
+```
+
+腳本輸出統計 JSON（`page_count`、`last_ingest`、`sessions_count`）並就地更新 `## 狀態` 機械段。
+
+敘事段更新規則（LLM 判斷）：
+- 若本批 ingest 出現新的重要 entity/concept 或主題轉向 → Edit `wiki/overview.md` 的 `## 主要主題` 段
+- `## 近期重點`：append 一條，格式 `- YYYY-MM-DD：<本批 ingest 重點>`，保留最近 3–5 條
+
 ## 步驟六：更新水位線
 
 所有頁面寫入完成後：

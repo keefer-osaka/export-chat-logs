@@ -11,7 +11,8 @@ MSG_VAULT_INITIALIZED="✅ Vault initialized at %VAULT_DIR%"
 MSG_SKILLS_ALREADY_CURRENT="✅ In-vault skills are already at version %VERSION% — nothing to update."
 MSG_SKILLS_INSTALLED="✅ In-vault skills installed (version %VERSION%) at %VAULT_DIR%/.claude/skills/"
 MSG_SKILLS_UPGRADED="✅ In-vault skills upgraded from %OLD_VERSION% → %NEW_VERSION%. Backup: %BACKUP_DIR%"
-MSG_KB_WIKI_RETIRED="ℹ️  Moved existing kb-wiki/ to backup — use /obsidian-kb:search instead."
+MSG_ROOT_DOCS_INSTALLED="✅ Root docs deployed: %FILES%"
+MSG_ROOT_DOCS_UPGRADED="ℹ️  Root docs updated: %FILES% (backup at %BACKUP_DIR%)"
 MSG_NEXT_STEPS="→ Start Claude Code in your vault directory to use /kb-ingest, /kb-lint, /kb-stats
 → To sync skills after a plugin upgrade, run: /obsidian-kb:upgrade"
 

@@ -11,7 +11,8 @@ MSG_VAULT_INITIALIZED="✅ Vault 已初始化：%VAULT_DIR%"
 MSG_SKILLS_ALREADY_CURRENT="✅ Vault 內 skills 已是最新版本 %VERSION%，無需更新。"
 MSG_SKILLS_INSTALLED="✅ Vault 內 skills 已安裝（版本 %VERSION%）：%VAULT_DIR%/.claude/skills/"
 MSG_SKILLS_UPGRADED="✅ Vault 內 skills 已從 %OLD_VERSION% 升級至 %NEW_VERSION%。備份：%BACKUP_DIR%"
-MSG_KB_WIKI_RETIRED="ℹ️  已將現有 kb-wiki/ 移至備份——請改用 /obsidian-kb:search。"
+MSG_ROOT_DOCS_INSTALLED="✅ 根目錄文件已部署：%FILES%"
+MSG_ROOT_DOCS_UPGRADED="ℹ️  根目錄文件已更新：%FILES%（備份：%BACKUP_DIR%）"
 MSG_NEXT_STEPS="→ 在 vault 目錄啟動 Claude Code 即可使用 /kb-ingest、/kb-lint、/kb-stats
 → 若日後升級 plugin，請執行 /obsidian-kb:upgrade 同步 vault 內 skills"
 
