@@ -25,7 +25,7 @@
       "name": "protoc-java-gen",
       "source": "./plugins/protoc-java-gen",
       "description": "Generate Java from .proto files using a specific protoc version and auto-copy to subprojects.",
-      "version": "0.1.0",
+      "version": "0.1.2",
       "author": {
         "name": "keefer-osaka"
       },
