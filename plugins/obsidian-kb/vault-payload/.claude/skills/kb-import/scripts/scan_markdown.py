@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 
 # ── _lib ──────────────────────────────────────────────────────────────────────
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-LIB_DIR = os.path.join(SCRIPT_DIR, "..", "..", "..", "_lib")
+LIB_DIR = os.path.join(SCRIPT_DIR, "..", "..", "_lib")
 sys.path.insert(0, LIB_DIR)
 
 # transcript_utils path
