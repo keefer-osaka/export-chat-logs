@@ -44,7 +44,7 @@ CATEGORIES = {
 
 def categorize(title, first_messages):
     text = (title or "").lower()
-    for role, content, _ in first_messages[:5]:
+    for role, content, *_ in first_messages[:5]:
         if role == "user":
             text += " " + content[:300].lower()
 

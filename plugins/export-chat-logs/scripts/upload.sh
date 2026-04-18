@@ -178,7 +178,7 @@ GIT_USER_NAME=$(git config --global user.name 2>/dev/null | tr ' ' '_')
 GIT_USER_NAME="${GIT_USER_NAME:-$(whoami)}"
 ZIPNAME="${TMPDIR:-/tmp}/chat-logs-${GIT_USER_NAME}-${EXPORT_DATE}.zip"
 rm -f "$ZIPNAME"
-cd "$TMPDIR_PATH" && zip -r "$ZIPNAME" . -x "*.DS_Store" -x ".cc_done/*" -x ".cw_done/*" > /dev/null
+cd "$TMPDIR_PATH" && zip -r "$ZIPNAME" . -x "*.DS_Store" -x ".cc_done/*" -x ".cw_done/*" -x "*.err" > /dev/null
 ZIP_SIZE=$(du -sh "$ZIPNAME" | cut -f1)
 ZIP_BYTES=$(stat -f%z "$ZIPNAME" 2>/dev/null || stat -c%s "$ZIPNAME" 2>/dev/null)
 
