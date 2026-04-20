@@ -21,7 +21,7 @@ from datetime import date, datetime
 
 # ── _lib 共用模組 ─────────────────────────────────────────────────────────────
 sys.path.insert(0, os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "_lib")))
-from wiki_utils import resolve_vault_dir, parse_frontmatter, WIKILINK_RE, TW_TZ, TOP_LEVEL_SKIP  # noqa: E402
+from wiki_utils import resolve_vault_dir, parse_frontmatter, WIKILINK_RE, TW_TZ, TOP_LEVEL_SKIP, extract_fm_text, find_duplicate_top_level_keys  # noqa: E402
 
 # ── 路徑設定 ──────────────────────────────────────────────────────────────────
 VAULT_DIR = Path(resolve_vault_dir(__file__))
@@ -271,6 +271,15 @@ def check_cross_author_conflict(parsed_pages, recent_days=7):
     return issues
 
 
+def check_duplicate_fm_keys(parsed_pages):
+    issues = []
+    for page, text, _fm, _body in parsed_pages:
+        dupes = find_duplicate_top_level_keys(extract_fm_text(text))
+        if dupes:
+            issues.append((page, dupes))
+    return issues
+
+
 # ── 報告輸出 ──────────────────────────────────────────────────────────────────
 
 def rel(path):
@@ -302,6 +311,10 @@ def _fmt_cross_author_conflict(item):
     tag = "⚠️ 硬" if kind == "hard" else "ℹ️ 建議"
     return f"- `{rel(page)}` [{tag}] {detail}"
 
+def _fmt_duplicate_fm_keys(item):
+    page, keys = item
+    return f"- `{rel(page)}` — 重複 key: {', '.join(keys)}"
+
 
 REPORT_SECTIONS = [
     ("canonical_drift",       "1. Canonical Drift",  _fmt_canonical_drift),
@@ -312,6 +325,7 @@ REPORT_SECTIONS = [
     ("index_missing",         "6. 索引缺漏",          _fmt_page),
     ("stale_pages",           "7. 過時頁面",          _fmt_page),
     ("cross_author_conflict", "8. 跨作者矛盾",        _fmt_cross_author_conflict),
+    ("duplicate_fm_keys",    "9. 重複 frontmatter key", _fmt_duplicate_fm_keys),
 ]
 
 
@@ -354,6 +368,7 @@ def main():
         "index_missing":         check_index_missing(parsed_pages),
         "stale_pages":           check_stale(parsed_pages),
         "cross_author_conflict": check_cross_author_conflict(parsed_pages),
+        "duplicate_fm_keys":     check_duplicate_fm_keys(parsed_pages),
     }
 
     report = generate_report(results)

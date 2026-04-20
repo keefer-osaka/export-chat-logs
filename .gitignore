@@ -19,3 +19,6 @@ CLAUDE.md
 
 # vault-payload 內的 .claude/ 需要追蹤（技能分發用），排除忽略規則
 !plugins/obsidian-kb/vault-payload/.claude/
+
+# OMC state
+.omc/

@@ -129,6 +129,17 @@ def extract_fm_text(text: str) -> str:
     return text[3:end].strip()
 
 
+def find_duplicate_top_level_keys(fm_text: str) -> list[str]:
+    """Return top-level frontmatter keys that appear more than once, in first-seen order."""
+    seen: dict[str, int] = {}
+    for line in fm_text.splitlines():
+        if not line.startswith((" ", "\t", "-")) and ":" in line:
+            key = line.split(":", 1)[0].strip()
+            if key:
+                seen[key] = seen.get(key, 0) + 1
+    return [k for k, n in seen.items() if n > 1]
+
+
 def parse_source_blocks(fm_text: str) -> list:
     """從 frontmatter 原文提取 sources 條目，回傳 [{"session": str, "has_transcript": bool}]。"""
     blocks = []

@@ -21,7 +21,7 @@ from pathlib import Path
 
 _SKILLS_DIR = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 sys.path.insert(0, os.path.join(_SKILLS_DIR, "_lib"))
-from wiki_utils import resolve_vault_dir, TW_TZ, format_tw_date  # noqa: E402
+from wiki_utils import resolve_vault_dir, TW_TZ, format_tw_date, find_duplicate_top_level_keys  # noqa: E402
 
 # ── 路徑常數 ─────────────────────────────────────────────────────────────────
 
@@ -312,7 +312,7 @@ def add_transcript_to_wiki_sources(wiki_path: str, session_to_transcript: dict) 
     if new_transcripts:
         # 讀取現有 transcripts: list（若有）
         existing = []
-        top_match = re.search(r'^transcripts:\n((?:  - .+\n?)+)', new_fm_text, re.MULTILINE)
+        top_match = re.search(r'^transcripts:[ \t]*(?:\[\])?\n((?:  - .+\n?)*)', new_fm_text, re.MULTILINE)
         if top_match:
             for entry in re.finditer(r'^\s+- "?(\[\[.+?\]\])"?', top_match.group(1), re.MULTILINE):
                 existing.append(entry.group(1))
@@ -340,6 +340,16 @@ def add_transcript_to_wiki_sources(wiki_path: str, session_to_transcript: dict) 
                 new_fm_text = new_fm_text.rstrip('\n') + '\n' + transcripts_block.rstrip('\n')
 
     new_content = fm_open + new_fm_text + fm_close + body_rest
+
+    dupes = find_duplicate_top_level_keys(new_fm_text)
+    if dupes:
+        print(
+            f"[ERROR] {wiki_path}: refused to write — frontmatter would contain "
+            f"duplicate top-level keys: {dupes}. Inspect the page manually.",
+            file=sys.stderr,
+        )
+        return False
+
     Path(wiki_path).write_text(new_content, encoding="utf-8")
     return True
 

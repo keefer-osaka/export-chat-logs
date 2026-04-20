@@ -49,9 +49,10 @@ python3 __VAULT_DIR__/.claude/skills/kb-ingest/scripts/scan_sessions.py -a -n 20
 5. 把 delta 訊息 append 到 transcript（步驟 4.5 的任務）
 6. 更新 `_schema/sessions.json` 條目
 
-**⚠️ Delta session 的 transcript wikilink**：
-使用 scan 輸出中的 `transcript_stem` 欄位（現有 transcript 檔名去除 `.md`），**不要**用 session `title` 自行生成 slug。
-Session 在建立 transcript 後可能被 `/rename`，title 已改但檔名不變，用 title 生成 slug 會產生斷裂連結。
+**⚠️ Transcript wikilink（新 session 與 delta session 均適用）**：
+一律使用 scan 輸出中的 `transcript_stem` 欄位，**嚴禁**從 `title` 自行生成 slug。
+- Delta session：`transcript_stem` = 現有 transcript 檔名去 `.md`（session 可能被 `/rename`，title 已變但檔名不變）
+- 新 session：`transcript_stem` = Python 預先計算好的檔名 stem（與 `upsert_transcripts.py` 建立的實際檔名一致）
 
 正確寫法：`[[<transcript_stem 欄位的值>]]`
 

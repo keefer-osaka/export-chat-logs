@@ -21,6 +21,7 @@ sys.path.insert(0, SCRIPT_DIR)
 sys.path.insert(0, LIB_DIR)
 from transcript_utils import (
     read_sessions_json, find_jsonl_files,
+    make_transcript_filename,
     PROJECTS_DIR, EXCLUDE_DIRS, EXCLUDE_FILES,
 )
 from wiki_utils import resolve_vault_dir, format_tw_date
@@ -399,11 +400,12 @@ def main():
         # 計算日期
         date_str = format_tw_date(data["first_ts"]) if data["first_ts"] else ""
 
+        title = data["title"] or data["first_user_message"][:60] or session_id
         results.append({
             "session_id": session_id,
             "project_dir": project_dir,
             "jsonl_path": filepath,
-            "title": data["title"] or data["first_user_message"][:60] or session_id,
+            "title": title,
             "cwd": data["cwd"],
             "date": date_str,
             "first_ts": data["first_ts"],
@@ -415,6 +417,9 @@ def main():
             "messages": formatted_messages,
             "delta": False,
             "base_transcript": "",
+            "transcript_stem": os.path.splitext(
+                make_transcript_filename(data["first_ts"], session_id, title)
+            )[0],
             "author": _LOCAL_AUTHOR,
             "source": "jsonl",
         })
